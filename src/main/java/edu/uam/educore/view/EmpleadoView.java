@@ -211,18 +211,20 @@ public class EmpleadoView extends VistaBase {
     private TipoPersonal seleccionarTipo() {
 
         System.out.println("\nTipo de empleado:");
-        System.out.println("1. CONSERJE");
-        System.out.println("2. GUARDA");
-        System.out.println("3. TECNICO");
-        System.out.println("4. MANTENIMIENTO");
+        System.out.println("1. DOCENTE");
+        System.out.println("2. CONSERJE");
+        System.out.println("3. GUARDA");
+        System.out.println("4. TECNICO");
+        System.out.println("5. MANTENIMIENTO");
 
         int opcion = leerEntero("Tipo");
 
         return switch (opcion) {
-            case 1 -> TipoPersonal.CONSERJE;
-            case 2 -> TipoPersonal.GUARDA;
-            case 3 -> TipoPersonal.TECNICO;
-            case 4 -> TipoPersonal.MANTENIMIENTO;
+            case 1 -> TipoPersonal.DOCENTE;
+            case 2 -> TipoPersonal.CONSERJE;
+            case 3 -> TipoPersonal.GUARDA;
+            case 4 -> TipoPersonal.TECNICO;
+            case 5 -> TipoPersonal.MANTENIMIENTO;
             default -> throw new IllegalArgumentException("Tipo inválido.");
         };
     }
