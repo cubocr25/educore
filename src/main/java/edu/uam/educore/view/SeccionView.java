@@ -15,191 +15,174 @@ import java.util.Scanner;
 
 public class SeccionView extends VistaBase {
 
-    private final SeccionController controller;
+  private final SeccionController controller;
 
-    public SeccionView(
-            Scanner scanner,
-            Repositorio<Seccion> seccionRepo,
-            Repositorio<Empleado> empleadoRepo,
-            Repositorio<Estudiante> estudianteRepo,
-            Repositorio<Edificio> edificioRepo) {
+  public SeccionView(
+      Scanner scanner,
+      Repositorio<Seccion> seccionRepo,
+      Repositorio<Empleado> empleadoRepo,
+      Repositorio<Estudiante> estudianteRepo,
+      Repositorio<Edificio> edificioRepo) {
 
-        super(scanner);
+    super(scanner);
 
-        controller = new SeccionController(
-                seccionRepo,
-                empleadoRepo,
-                estudianteRepo,
-                edificioRepo);
+    controller = new SeccionController(seccionRepo, empleadoRepo, estudianteRepo, edificioRepo);
+  }
+
+  public void iniciar() {
+
+    boolean activo = true;
+
+    while (activo) {
+
+      switch (mostrarMenu()) {
+        case 1 -> registrar();
+
+        case 2 -> listar();
+
+        case 3 -> agregarEstudiante();
+
+        case 4 -> removerEstudiante();
+
+        case 5 -> eliminar();
+
+        case 0 -> activo = false;
+
+        default -> mostrarError("Opción inválida.");
+      }
     }
+  }
 
-    public void iniciar() {
+  // --------------------------------------------------------
 
-        boolean activo = true;
+  private void registrar() {
 
-        while (activo) {
+    String codigo = leerTexto("Código");
+    String nombre = leerTexto("Nombre");
 
-            switch (mostrarMenu()) {
+    int aulaId = leerEntero("ID del aula");
 
-                case 1 -> registrar();
+    int docenteId = leerEntero("ID del docente");
 
-                case 2 -> listar();
+    try {
 
-                case 3 -> agregarEstudiante();
+      Seccion s = controller.registrar(codigo, nombre, aulaId, docenteId);
 
-                case 4 -> removerEstudiante();
+      mostrarMensaje("Sección registrada.\n" + s.getInfo());
 
-                case 5 -> eliminar();
+    } catch (Exception e) {
 
-                case 0 -> activo = false;
-
-                default -> mostrarError("Opción inválida.");
-            }
-        }
+      mostrarError(e.getMessage());
     }
+  }
 
-    // --------------------------------------------------------
+  private void listar() {
 
-    private void registrar() {
+    try {
 
-        String codigo = leerTexto("Código");
-        String nombre = leerTexto("Nombre");
+      List<Seccion> lista = controller.listar();
 
-        int aulaId = leerEntero("ID del aula");
+      if (lista.isEmpty()) {
 
-        int docenteId = leerEntero("ID del docente");
+        mostrarMensaje("No hay secciones registradas.");
+        return;
+      }
 
-        try {
+      System.out.println("\n--- SECCIONES ---");
 
-            Seccion s =
-                    controller.registrar(
-                            codigo,
-                            nombre,
-                            aulaId,
-                            docenteId);
+      for (Seccion s : lista) {
 
-            mostrarMensaje(
-                    "Sección registrada.\n"
-                            + s.getInfo());
+        System.out.println(s.getInfo());
+      }
 
-        } catch (Exception e) {
+    } catch (Exception e) {
 
-            mostrarError(e.getMessage());
-        }
+      mostrarError(e.getMessage());
     }
+  }
 
-    private void listar() {
+  private void agregarEstudiante() {
 
-        try {
+    int seccionId = leerEntero("ID de la sección");
 
-            List<Seccion> lista = controller.listar();
+    int estudianteId = leerEntero("ID del estudiante");
 
-            if (lista.isEmpty()) {
+    try {
 
-                mostrarMensaje("No hay secciones registradas.");
-                return;
-            }
+      controller.agregarEstudiante(seccionId, estudianteId);
 
-            System.out.println("\n--- SECCIONES ---");
+      mostrarMensaje("Estudiante agregado.");
 
-            for (Seccion s : lista) {
+    } catch (Exception e) {
 
-                System.out.println(s.getInfo());
-            }
-
-        } catch (Exception e) {
-
-            mostrarError(e.getMessage());
-        }
+      mostrarError(e.getMessage());
     }
+  }
 
-    private void agregarEstudiante() {
+  private void removerEstudiante() {
 
-        int seccionId = leerEntero("ID de la sección");
+    int seccionId = leerEntero("ID de la sección");
 
-        int estudianteId = leerEntero("ID del estudiante");
+    int estudianteId = leerEntero("ID del estudiante");
 
-        try {
+    try {
 
-            controller.agregarEstudiante(
-                    seccionId,
-                    estudianteId);
+      controller.removerEstudiante(seccionId, estudianteId);
 
-            mostrarMensaje("Estudiante agregado.");
+      mostrarMensaje("Estudiante removido.");
 
-        } catch (Exception e) {
+    } catch (Exception e) {
 
-            mostrarError(e.getMessage());
-        }
+      mostrarError(e.getMessage());
     }
+  }
 
-    private void removerEstudiante() {
+  private void eliminar() {
 
-        int seccionId = leerEntero("ID de la sección");
+    int id = leerEntero("ID de la sección");
 
-        int estudianteId = leerEntero("ID del estudiante");
+    try {
 
-        try {
+      Seccion s = controller.buscarPorId(id);
 
-            controller.removerEstudiante(
-                    seccionId,
-                    estudianteId);
+      if (s == null) {
 
-            mostrarMensaje("Estudiante removido.");
+        mostrarError("No existe la sección.");
+        return;
+      }
 
-        } catch (Exception e) {
+      System.out.println(s.getInfo());
 
-            mostrarError(e.getMessage());
-        }
+      String confirmar = leerTexto("¿Confirma la eliminación? (s/n)");
+
+      if (!confirmar.equalsIgnoreCase("s")) {
+
+        mostrarMensaje("Operación cancelada.");
+        return;
+      }
+
+      controller.eliminar(id);
+
+      mostrarMensaje("Sección eliminada.");
+
+    } catch (Exception e) {
+
+      mostrarError(e.getMessage());
     }
+  }
 
-    private void eliminar() {
+  // --------------------------------------------------------
 
-        int id = leerEntero("ID de la sección");
+  private int mostrarMenu() {
 
-        try {
+    System.out.println("\n--- GESTIÓN DE SECCIONES ---");
+    System.out.println("1. Registrar sección");
+    System.out.println("2. Listar secciones");
+    System.out.println("3. Agregar estudiante");
+    System.out.println("4. Remover estudiante");
+    System.out.println("5. Eliminar sección");
+    System.out.println("0. Volver");
 
-            Seccion s = controller.buscarPorId(id);
-
-            if (s == null) {
-
-                mostrarError("No existe la sección.");
-                return;
-            }
-
-            System.out.println(s.getInfo());
-
-            String confirmar =
-                    leerTexto("¿Confirma la eliminación? (s/n)");
-
-            if (!confirmar.equalsIgnoreCase("s")) {
-
-                mostrarMensaje("Operación cancelada.");
-                return;
-            }
-
-            controller.eliminar(id);
-
-            mostrarMensaje("Sección eliminada.");
-
-        } catch (Exception e) {
-
-            mostrarError(e.getMessage());
-        }
-    }
-
-    // --------------------------------------------------------
-
-    private int mostrarMenu() {
-
-        System.out.println("\n--- GESTIÓN DE SECCIONES ---");
-        System.out.println("1. Registrar sección");
-        System.out.println("2. Listar secciones");
-        System.out.println("3. Agregar estudiante");
-        System.out.println("4. Remover estudiante");
-        System.out.println("5. Eliminar sección");
-        System.out.println("0. Volver");
-
-        return leerEntero();
-    }
+    return leerEntero();
+  }
 }

@@ -16,163 +16,140 @@ import java.util.Optional;
 
 public class SeccionController {
 
-    private final Repositorio<Seccion> seccionRepo;
-    private final Repositorio<Empleado> empleadoRepo;
-    private final Repositorio<Estudiante> estudianteRepo;
-    private final Repositorio<Edificio> edificioRepo;
+  private final Repositorio<Seccion> seccionRepo;
+  private final Repositorio<Empleado> empleadoRepo;
+  private final Repositorio<Estudiante> estudianteRepo;
+  private final Repositorio<Edificio> edificioRepo;
 
-    private int proximoId = 1;
+  private int proximoId = 1;
 
-    public SeccionController(
-            Repositorio<Seccion> seccionRepo,
-            Repositorio<Empleado> empleadoRepo,
-            Repositorio<Estudiante> estudianteRepo,
-            Repositorio<Edificio> edificioRepo) {
+  public SeccionController(
+      Repositorio<Seccion> seccionRepo,
+      Repositorio<Empleado> empleadoRepo,
+      Repositorio<Estudiante> estudianteRepo,
+      Repositorio<Edificio> edificioRepo) {
 
-        this.seccionRepo = seccionRepo;
-        this.empleadoRepo = empleadoRepo;
-        this.estudianteRepo = estudianteRepo;
-        this.edificioRepo = edificioRepo;
+    this.seccionRepo = seccionRepo;
+    this.empleadoRepo = empleadoRepo;
+    this.estudianteRepo = estudianteRepo;
+    this.edificioRepo = edificioRepo;
+  }
+
+  // ================= REGISTRAR =================
+
+  public Seccion registrar(String codigo, String nombre, int aulaId, int docenteId)
+      throws Exception {
+
+    validar(codigo, nombre);
+
+    // Buscar docente
+    Optional<Empleado> empleado = empleadoRepo.buscarPorId(docenteId);
+
+    if (empleado.isEmpty()) {
+      throw new IllegalArgumentException("No existe empleado con ID " + docenteId + ".");
     }
 
-    // ================= REGISTRAR =================
-
-    public Seccion registrar(
-            String codigo,
-            String nombre,
-            int aulaId,
-            int docenteId) throws Exception {
-
-        validar(codigo, nombre);
-
-        // Buscar docente
-        Optional<Empleado> empleado = empleadoRepo.buscarPorId(docenteId);
-
-        if (empleado.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "No existe empleado con ID " + docenteId + ".");
-        }
-
-        if (empleado.get().getTipoPersonal() != TipoPersonal.DOCENTE) {
-            throw new IllegalArgumentException(
-                    "El empleado seleccionado no es un docente.");
-        }
-
-        // Buscar aula recorriendo edificios
-        Aula aula = buscarAula(aulaId);
-
-        if (aula == null) {
-            throw new IllegalArgumentException(
-                    "No existe aula con ID " + aulaId + ".");
-        }
-
-        Seccion seccion = new Seccion(
-                proximoId,
-                codigo,
-                nombre,
-                aula,
-                empleado.get());
-
-        seccionRepo.guardar(seccion);
-
-        proximoId++;
-
-        return seccion;
+    if (empleado.get().getTipoPersonal() != TipoPersonal.DOCENTE) {
+      throw new IllegalArgumentException("El empleado seleccionado no es un docente.");
     }
 
-    // ================= CRUD =================
+    // Buscar aula recorriendo edificios
+    Aula aula = buscarAula(aulaId);
 
-    public List<Seccion> listar() throws Exception {
-        return seccionRepo.buscarTodos();
+    if (aula == null) {
+      throw new IllegalArgumentException("No existe aula con ID " + aulaId + ".");
     }
 
-    public Seccion buscarPorId(int id) throws Exception {
+    Seccion seccion = new Seccion(proximoId, codigo, nombre, aula, empleado.get());
 
-        Optional<Seccion> resultado = seccionRepo.buscarPorId(id);
+    seccionRepo.guardar(seccion);
 
-        return resultado.orElse(null);
+    proximoId++;
+
+    return seccion;
+  }
+
+  // ================= CRUD =================
+
+  public List<Seccion> listar() throws Exception {
+    return seccionRepo.buscarTodos();
+  }
+
+  public Seccion buscarPorId(int id) throws Exception {
+
+    Optional<Seccion> resultado = seccionRepo.buscarPorId(id);
+
+    return resultado.orElse(null);
+  }
+
+  public void eliminar(int id) throws Exception {
+
+    Seccion seccion = buscarPorId(id);
+
+    if (seccion == null) {
+      throw new IllegalArgumentException("No existe la sección.");
     }
 
-    public void eliminar(int id) throws Exception {
-
-        Seccion seccion = buscarPorId(id);
-
-        if (seccion == null) {
-            throw new IllegalArgumentException(
-                    "No existe la sección.");
-        }
-
-        if (!seccion.getEstudiantes().isEmpty()) {
-            throw new IllegalArgumentException(
-                    "No puede eliminar una sección con estudiantes inscritos.");
-        }
-
-        seccionRepo.eliminar(id);
+    if (!seccion.getEstudiantes().isEmpty()) {
+      throw new IllegalArgumentException(
+          "No puede eliminar una sección con estudiantes inscritos.");
     }
 
-    // ================= ESTUDIANTES =================
+    seccionRepo.eliminar(id);
+  }
 
-    public void agregarEstudiante(
-            int seccionId,
-            int estudianteId) throws Exception {
+  // ================= ESTUDIANTES =================
 
-        Seccion seccion = buscarPorId(seccionId);
+  public void agregarEstudiante(int seccionId, int estudianteId) throws Exception {
 
-        if (seccion == null) {
-            throw new IllegalArgumentException(
-                    "No existe la sección.");
-        }
+    Seccion seccion = buscarPorId(seccionId);
 
-        Optional<Estudiante> estudiante =
-                estudianteRepo.buscarPorId(estudianteId);
-
-        if (estudiante.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "No existe estudiante con ID " + estudianteId + ".");
-        }
-
-        seccion.agregarEstudiante(estudiante.get());
+    if (seccion == null) {
+      throw new IllegalArgumentException("No existe la sección.");
     }
 
-    public void removerEstudiante(
-            int seccionId,
-            int estudianteId) throws Exception {
+    Optional<Estudiante> estudiante = estudianteRepo.buscarPorId(estudianteId);
 
-        Seccion seccion = buscarPorId(seccionId);
-
-        if (seccion == null) {
-            throw new IllegalArgumentException(
-                    "No existe la sección.");
-        }
-
-        seccion.removerEstudiante(estudianteId);
+    if (estudiante.isEmpty()) {
+      throw new IllegalArgumentException("No existe estudiante con ID " + estudianteId + ".");
     }
 
-    // ================= AUXILIARES =================
+    seccion.agregarEstudiante(estudiante.get());
+  }
 
-    private Aula buscarAula(int aulaId) throws Exception {
+  public void removerEstudiante(int seccionId, int estudianteId) throws Exception {
 
-        List<Edificio> edificios = edificioRepo.buscarTodos();
+    Seccion seccion = buscarPorId(seccionId);
 
-        for (Edificio edificio : edificios) {
-
-            Aula aula = edificio.buscarAula(aulaId);
-
-            if (aula != null) {
-                return aula;
-            }
-        }
-
-        return null;
+    if (seccion == null) {
+      throw new IllegalArgumentException("No existe la sección.");
     }
 
-    private void validar(
-            String codigo,
-            String nombre) {
+    seccion.removerEstudiante(estudianteId);
+  }
 
-        if (codigo.isBlank() || nombre.isBlank()) {
-            throw new IllegalArgumentException(
-                    "Código y nombre son obligatorios.");
-        }
+  // ================= AUXILIARES =================
+
+  private Aula buscarAula(int aulaId) throws Exception {
+
+    List<Edificio> edificios = edificioRepo.buscarTodos();
+
+    for (Edificio edificio : edificios) {
+
+      Aula aula = edificio.buscarAula(aulaId);
+
+      if (aula != null) {
+        return aula;
+      }
     }
+
+    return null;
+  }
+
+  private void validar(String codigo, String nombre) {
+
+    if (codigo.isBlank() || nombre.isBlank()) {
+      throw new IllegalArgumentException("Código y nombre son obligatorios.");
+    }
+  }
 }

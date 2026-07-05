@@ -14,103 +14,95 @@ import java.util.Optional;
 
 public class EmpleadoController {
 
-    private final Repositorio<Empleado> repo;
-    private int proximoId = 1;
+  private final Repositorio<Empleado> repo;
+  private int proximoId = 1;
 
-    public EmpleadoController(Repositorio<Empleado> repo) {
-        this.repo = repo;
+  public EmpleadoController(Repositorio<Empleado> repo) {
+    this.repo = repo;
+  }
+
+  public Empleado registrar(
+      String nombre,
+      String apellidos,
+      String email,
+      double salario,
+      LocalDate fechaIngreso,
+      TipoPersonal tipo)
+      throws Exception {
+
+    validarBase(nombre, apellidos, email, salario);
+
+    Empleado empleado =
+        new Empleado(proximoId, nombre, apellidos, email, salario, fechaIngreso, tipo);
+
+    repo.guardar(empleado);
+    proximoId++;
+
+    return empleado;
+  }
+
+  public List<Empleado> listar() throws Exception {
+    return repo.buscarTodos();
+  }
+
+  public Empleado buscarPorId(int id) throws Exception {
+    Optional<Empleado> resultado = repo.buscarPorId(id);
+    return resultado.orElse(null);
+  }
+
+  public Empleado actualizar(
+      int id,
+      String nombre,
+      String apellidos,
+      String email,
+      double salario,
+      LocalDate fechaIngreso,
+      TipoPersonal tipo)
+      throws Exception {
+
+    Empleado empleado = buscarPorId(id);
+
+    if (empleado == null) {
+      throw new IllegalArgumentException("No existe empleado con ID " + id + ".");
     }
 
-    public Empleado registrar(
-            String nombre,
-            String apellidos,
-            String email,
-            double salario,
-            LocalDate fechaIngreso,
-            TipoPersonal tipo) throws Exception {
+    validarBase(nombre, apellidos, email, salario);
 
-        validarBase(nombre, apellidos, email, salario);
+    empleado.setNombre(nombre);
+    empleado.setApellidos(apellidos);
+    empleado.setEmail(email);
+    empleado.setSalario(salario);
+    empleado.setFechaIngreso(fechaIngreso);
+    empleado.setTipoPersonal(tipo);
 
-        Empleado empleado = new Empleado(
-                proximoId,
-                nombre,
-                apellidos,
-                email,
-                salario,
-                fechaIngreso,
-                tipo);
+    repo.actualizar(empleado);
 
-        repo.guardar(empleado);
-        proximoId++;
+    return empleado;
+  }
 
-        return empleado;
+  public void eliminar(int id) throws Exception {
+
+    Empleado empleado = buscarPorId(id);
+
+    if (empleado == null) {
+      throw new IllegalArgumentException("No existe empleado con ID " + id + ".");
     }
 
-    public List<Empleado> listar() throws Exception {
-        return repo.buscarTodos();
+    repo.eliminar(id);
+  }
+
+  private void validarBase(String nombre, String apellidos, String email, double salario) {
+
+    if (nombre.isBlank() || apellidos.isBlank()) {
+      throw new IllegalArgumentException("Nombre y apellidos son obligatorios.");
     }
 
-    public Empleado buscarPorId(int id) throws Exception {
-        Optional<Empleado> resultado = repo.buscarPorId(id);
-        return resultado.orElse(null);
+    if (!Validador.validarEmail(email)) {
+      throw new IllegalArgumentException("Email inválido.");
     }
 
-    public Empleado actualizar(
-            int id,
-            String nombre,
-            String apellidos,
-            String email,
-            double salario,
-            LocalDate fechaIngreso,
-            TipoPersonal tipo) throws Exception {
-
-        Empleado empleado = buscarPorId(id);
-
-        if (empleado == null) {
-            throw new IllegalArgumentException("No existe empleado con ID " + id + ".");
-        }
-
-        validarBase(nombre, apellidos, email, salario);
-
-        empleado.setNombre(nombre);
-        empleado.setApellidos(apellidos);
-        empleado.setEmail(email);
-        empleado.setSalario(salario);
-        empleado.setFechaIngreso(fechaIngreso);
-        empleado.setTipoPersonal(tipo);
-
-        repo.actualizar(empleado);
-
-        return empleado;
+    if (salario < 0) {
+      throw new IllegalArgumentException("El salario no puede ser negativo.");
     }
-
-    public void eliminar(int id) throws Exception {
-
-        Empleado empleado = buscarPorId(id);
-
-        if (empleado == null) {
-            throw new IllegalArgumentException("No existe empleado con ID " + id + ".");
-        }
-
-        repo.eliminar(id);
-    }
-
-    private void validarBase(
-            String nombre,
-            String apellidos,
-            String email,
-            double salario) {
-
-        if (nombre.isBlank() || apellidos.isBlank()) {
-            throw new IllegalArgumentException("Nombre y apellidos son obligatorios.");
-        }
-
-        if (!Validador.validarEmail(email)) {
-            throw new IllegalArgumentException("Email inválido.");
-        }
-
-        if (salario < 0) {
-            throw new IllegalArgumentException("El salario no puede ser negativo.");
-        }
-    }
+  }
 }

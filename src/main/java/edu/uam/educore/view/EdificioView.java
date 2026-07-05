@@ -13,256 +13,247 @@ import java.util.Scanner;
 
 public class EdificioView extends VistaBase {
 
-    private final EdificioController controller;
+  private final EdificioController controller;
 
-    public EdificioView(Scanner scanner, Repositorio<Edificio> repo) {
-        super(scanner);
-        this.controller = new EdificioController(repo);
+  public EdificioView(Scanner scanner, Repositorio<Edificio> repo) {
+    super(scanner);
+    this.controller = new EdificioController(repo);
+  }
+
+  // ── Ciclo de la vista ─────────────────────────────────────────────
+
+  public void iniciar() {
+    boolean activo = true;
+
+    while (activo) {
+
+      int opcion = mostrarMenu();
+
+      switch (opcion) {
+        case 1 -> registrarEdificio();
+
+        case 2 -> listarEdificios();
+
+        case 3 -> buscarEdificio();
+
+        case 4 -> eliminarEdificio();
+
+        case 5 -> agregarAula();
+
+        case 6 -> listarAulas();
+
+        case 7 -> eliminarAula();
+
+        case 0 -> activo = false;
+
+        default -> mostrarError("Opción inválida.");
+      }
     }
+  }
 
-    // ── Ciclo de la vista ─────────────────────────────────────────────
+  // ───────────────────────── EDIFICIOS ─────────────────────────
 
-    public void iniciar() {
-        boolean activo = true;
+  private void registrarEdificio() {
 
-        while (activo) {
+    String codigo = leerTexto("Código");
+    String nombre = leerTexto("Nombre");
 
-            int opcion = mostrarMenu();
+    try {
 
-            switch (opcion) {
+      Edificio edificio = controller.registrar(codigo, nombre);
 
-                case 1 -> registrarEdificio();
+      mostrarMensaje("Edificio registrado.\n" + edificio.getInfo());
 
-                case 2 -> listarEdificios();
-
-                case 3 -> buscarEdificio();
-
-                case 4 -> eliminarEdificio();
-
-                case 5 -> agregarAula();
-
-                case 6 -> listarAulas();
-
-                case 7 -> eliminarAula();
-
-                case 0 -> activo = false;
-
-                default -> mostrarError("Opción inválida.");
-            }
-        }
+    } catch (Exception e) {
+      mostrarError(e.getMessage());
     }
+  }
 
-    // ───────────────────────── EDIFICIOS ─────────────────────────
+  private void listarEdificios() {
 
-    private void registrarEdificio() {
+    try {
 
-        String codigo = leerTexto("Código");
-        String nombre = leerTexto("Nombre");
+      List<Edificio> lista = controller.listar();
 
-        try {
+      if (lista.isEmpty()) {
 
-            Edificio edificio = controller.registrar(codigo, nombre);
+        mostrarMensaje("No hay edificios registrados.");
+        return;
+      }
 
-            mostrarMensaje(
-                    "Edificio registrado.\n"
-                    + edificio.getInfo());
+      System.out.println("\n--- EDIFICIOS REGISTRADOS ---");
 
-        } catch (Exception e) {
-            mostrarError(e.getMessage());
-        }
+      for (Edificio e : lista) {
+
+        System.out.println(e.getInfo());
+      }
+
+    } catch (Exception e) {
+
+      mostrarError(e.getMessage());
     }
+  }
 
-    private void listarEdificios() {
+  private void buscarEdificio() {
 
-        try {
+    int id = leerEntero("ID del edificio");
 
-            List<Edificio> lista = controller.listar();
+    try {
 
-            if (lista.isEmpty()) {
+      Edificio edificio = controller.buscarPorId(id);
 
-                mostrarMensaje("No hay edificios registrados.");
-                return;
-            }
+      if (edificio == null) {
 
-            System.out.println("\n--- EDIFICIOS REGISTRADOS ---");
+        mostrarError("No existe edificio con ID " + id + ".");
+        return;
+      }
 
-            for (Edificio e : lista) {
+      System.out.println("\n" + edificio.getInfo());
 
-                System.out.println(e.getInfo());
-            }
+      if (edificio.getAulas().isEmpty()) {
 
-        } catch (Exception e) {
+        mostrarMensaje("Este edificio no tiene aulas.");
+        return;
+      }
 
-            mostrarError(e.getMessage());
-        }
+      System.out.println("\nAulas:");
+
+      for (Aula aula : edificio.getAulas()) {
+
+        System.out.println("  " + aula.getInfo());
+      }
+
+    } catch (Exception e) {
+
+      mostrarError(e.getMessage());
     }
+  }
 
-    private void buscarEdificio() {
+  private void eliminarEdificio() {
 
-        int id = leerEntero("ID del edificio");
+    int id = leerEntero("ID del edificio");
 
-        try {
+    try {
 
-            Edificio edificio = controller.buscarPorId(id);
+      Edificio edificio = controller.buscarPorId(id);
 
-            if (edificio == null) {
+      if (edificio == null) {
 
-                mostrarError("No existe edificio con ID " + id + ".");
-                return;
-            }
+        mostrarError("No existe edificio con ID " + id + ".");
+        return;
+      }
 
-            System.out.println("\n" + edificio.getInfo());
+      System.out.println(edificio.getInfo());
 
-            if (edificio.getAulas().isEmpty()) {
+      String confirmar = leerTexto("¿Confirma la eliminación? (s/n)");
 
-                mostrarMensaje("Este edificio no tiene aulas.");
-                return;
-            }
+      if (!confirmar.equalsIgnoreCase("s")) {
 
-            System.out.println("\nAulas:");
+        mostrarMensaje("Operación cancelada.");
+        return;
+      }
 
-            for (Aula aula : edificio.getAulas()) {
+      controller.eliminar(id);
 
-                System.out.println("  " + aula.getInfo());
-            }
+      mostrarMensaje("Edificio eliminado.");
 
-        } catch (Exception e) {
+    } catch (Exception e) {
 
-            mostrarError(e.getMessage());
-        }
+      mostrarError(e.getMessage());
     }
+  }
 
-    private void eliminarEdificio() {
+  // ───────────────────────── AULAS ─────────────────────────
 
-        int id = leerEntero("ID del edificio");
+  private void agregarAula() {
 
-        try {
+    int edificioId = leerEntero("ID del edificio");
 
-            Edificio edificio = controller.buscarPorId(id);
+    String numero = leerTexto("Número");
 
-            if (edificio == null) {
+    int capacidad = leerEntero("Capacidad");
 
-                mostrarError("No existe edificio con ID " + id + ".");
-                return;
-            }
+    String tipo = leerTexto("Tipo");
 
-            System.out.println(edificio.getInfo());
+    try {
 
-            String confirmar = leerTexto("¿Confirma la eliminación? (s/n)");
+      Aula aula = controller.agregarAula(edificioId, numero, capacidad, tipo);
 
-            if (!confirmar.equalsIgnoreCase("s")) {
+      mostrarMensaje("Aula registrada.\n" + aula.getInfo());
 
-                mostrarMensaje("Operación cancelada.");
-                return;
-            }
+    } catch (Exception e) {
 
-            controller.eliminar(id);
-
-            mostrarMensaje("Edificio eliminado.");
-
-        } catch (Exception e) {
-
-            mostrarError(e.getMessage());
-        }
+      mostrarError(e.getMessage());
     }
+  }
 
-    // ───────────────────────── AULAS ─────────────────────────
+  private void listarAulas() {
 
-    private void agregarAula() {
+    int edificioId = leerEntero("ID del edificio");
 
-        int edificioId = leerEntero("ID del edificio");
+    try {
 
-        String numero = leerTexto("Número");
+      Edificio edificio = controller.buscarPorId(edificioId);
 
-        int capacidad = leerEntero("Capacidad");
+      if (edificio == null) {
 
-        String tipo = leerTexto("Tipo");
+        mostrarError("No existe edificio.");
+        return;
+      }
 
-        try {
+      if (edificio.getAulas().isEmpty()) {
 
-            Aula aula = controller.agregarAula(
-                    edificioId,
-                    numero,
-                    capacidad,
-                    tipo);
+        mostrarMensaje("Este edificio no tiene aulas.");
+        return;
+      }
 
-            mostrarMensaje(
-                    "Aula registrada.\n"
-                    + aula.getInfo());
+      System.out.println("\n--- AULAS ---");
 
-        } catch (Exception e) {
+      for (Aula aula : edificio.getAulas()) {
 
-            mostrarError(e.getMessage());
-        }
+        System.out.println(aula.getInfo());
+      }
+
+    } catch (Exception e) {
+
+      mostrarError(e.getMessage());
     }
+  }
 
-    private void listarAulas() {
+  private void eliminarAula() {
 
-        int edificioId = leerEntero("ID del edificio");
+    int edificioId = leerEntero("ID del edificio");
 
-        try {
+    int aulaId = leerEntero("ID del aula");
 
-            Edificio edificio = controller.buscarPorId(edificioId);
+    try {
 
-            if (edificio == null) {
+      controller.eliminarAula(edificioId, aulaId);
 
-                mostrarError("No existe edificio.");
-                return;
-            }
+      mostrarMensaje("Aula eliminada.");
 
-            if (edificio.getAulas().isEmpty()) {
+    } catch (Exception e) {
 
-                mostrarMensaje("Este edificio no tiene aulas.");
-                return;
-            }
-
-            System.out.println("\n--- AULAS ---");
-
-            for (Aula aula : edificio.getAulas()) {
-
-                System.out.println(aula.getInfo());
-            }
-
-        } catch (Exception e) {
-
-            mostrarError(e.getMessage());
-        }
+      mostrarError(e.getMessage());
     }
+  }
 
-    private void eliminarAula() {
+  // ───────────────────────── MENÚ ─────────────────────────
 
-        int edificioId = leerEntero("ID del edificio");
+  private int mostrarMenu() {
 
-        int aulaId = leerEntero("ID del aula");
+    System.out.println("\n--- GESTIÓN DE EDIFICIOS Y AULAS ---");
+    System.out.println("1. Registrar edificio");
+    System.out.println("2. Listar edificios");
+    System.out.println("3. Buscar edificio");
+    System.out.println("4. Eliminar edificio");
+    System.out.println("5. Agregar aula");
+    System.out.println("6. Listar aulas de un edificio");
+    System.out.println("7. Eliminar aula");
+    System.out.println("0. Volver");
 
-        try {
+    System.out.print("Opción: ");
 
-            controller.eliminarAula(edificioId, aulaId);
-
-            mostrarMensaje("Aula eliminada.");
-
-        } catch (Exception e) {
-
-            mostrarError(e.getMessage());
-        }
-    }
-
-    // ───────────────────────── MENÚ ─────────────────────────
-
-    private int mostrarMenu() {
-
-        System.out.println("\n--- GESTIÓN DE EDIFICIOS Y AULAS ---");
-        System.out.println("1. Registrar edificio");
-        System.out.println("2. Listar edificios");
-        System.out.println("3. Buscar edificio");
-        System.out.println("4. Eliminar edificio");
-        System.out.println("5. Agregar aula");
-        System.out.println("6. Listar aulas de un edificio");
-        System.out.println("7. Eliminar aula");
-        System.out.println("0. Volver");
-
-        System.out.print("Opción: ");
-
-        return leerEntero();
-    }
+    return leerEntero();
+  }
 }

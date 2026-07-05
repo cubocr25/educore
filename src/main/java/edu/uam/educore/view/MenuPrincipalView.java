@@ -1,11 +1,10 @@
 package edu.uam.educore.view;
 
-import edu.uam.educore.dao.ListaEstudianteRepo;
-import java.util.Scanner;
-import edu.uam.educore.dao.ListaEmpleadoRepo;
 import edu.uam.educore.dao.ListaEdificioRepo;
+import edu.uam.educore.dao.ListaEmpleadoRepo;
+import edu.uam.educore.dao.ListaEstudianteRepo;
 import edu.uam.educore.dao.ListaSeccionRepo;
-
+import java.util.Scanner;
 
 public class MenuPrincipalView extends VistaBase {
 
@@ -21,12 +20,13 @@ public class MenuPrincipalView extends VistaBase {
     ListaEstudianteRepo estudianteRepo = new ListaEstudianteRepo();
     ListaEmpleadoRepo empleadoRepo = new ListaEmpleadoRepo();
     ListaEdificioRepo edificioRepo = new ListaEdificioRepo();
-    ListaSeccionRepo  seccionRepo  = new ListaSeccionRepo();
+    ListaSeccionRepo seccionRepo = new ListaSeccionRepo();
 
     this.estudianteView = new EstudianteView(scanner, estudianteRepo);
     this.empleadoView = new EmpleadoView(scanner, empleadoRepo);
-    this.academicoView = new MenuAcademicoView(scanner, edificioRepo, seccionRepo, empleadoRepo, estudianteRepo);
-    
+    this.academicoView =
+        new MenuAcademicoView(scanner, edificioRepo, seccionRepo, empleadoRepo, estudianteRepo);
+
     // this.edificioView = new EdificioView(scanner, edificioRepo);
     // this.seccionView  = new SeccionView(scanner, seccionRepo, empleadoRepo, estudianteRepo,
     // edificioRepo);
