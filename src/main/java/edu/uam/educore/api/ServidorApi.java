@@ -48,6 +48,9 @@ import edu.uam.educore.model.infraestructura.Edificio;
 import edu.uam.educore.dao.ListaSeccionRepo;
 import edu.uam.educore.controller.EdificioController;
 import edu.uam.educore.dao.ListaEdificioRepo;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.util.Properties;
 
 /**
  * Arma EduCore como app web. Estudiante corre sobre base de datos (referencia)
@@ -565,7 +568,19 @@ public class ServidorApi {
                     // de conteo y escritura del archivo vive en ServidorReportes.generarYGuardar (la
                     // implementan los estudiantes).
                     String host = System.getenv("REPORTE_HOST");
-                    int puertoReporte = Integer.parseInt(System.getenv("REPORTE_PORT"));
+                    String puertoReporteTexto = System.getenv("REPORTE_PORT");
+
+                    if (puertoReporteTexto == null || puertoReporteTexto.isBlank()) {
+                        Properties props = new Properties();
+
+                        try (InputStream in = new FileInputStream(".env")) {
+                            props.load(in);
+                        }
+
+                        puertoReporteTexto = props.getProperty("REPORTE_PORT");
+                    }
+
+                    int puertoReporte = Integer.parseInt(puertoReporteTexto);
                     try (Socket socket = new Socket(host, puertoReporte); PrintWriter out
                     = new PrintWriter(socket.getOutputStream(), true, StandardCharsets.UTF_8); BufferedReader in
                     = new BufferedReader(
