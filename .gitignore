@@ -21,3 +21,6 @@ Thumbs.db
 # Configuración local de BD (no compartir credenciales)
 db.properties
 src/main/resources/db.properties
+
+# Datos locales de pruebas
+data/
