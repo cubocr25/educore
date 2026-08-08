@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import edu.uam.educore.model.personas.Empleado;
 import edu.uam.educore.enums.TipoPersonal;
+import edu.uam.educore.model.academico.Seccion;
 
 /**
  * Un DTO (Data Transfer Object) es un record de solo datos que traduce una
@@ -162,6 +163,73 @@ public final class Dtos {
 
             for (Edificio e : edificios) {
                 resultado.add(EdificioDto.desde(e));
+            }
+
+            return resultado;
+        }
+    }
+
+    // ── Sección (P1 de cada grupo) ──
+    public record SeccionRequest(
+            String codigo,
+            String nombre,
+            int aulaId,
+            int docenteId) {
+
+    }
+
+    public record InscripcionRequest(
+            int estudianteId) {
+
+    }
+
+    public record EstudianteResumenDto(
+            int id,
+            String nombre,
+            String carnet) {
+
+        public static EstudianteResumenDto desde(Estudiante e) {
+            return new EstudianteResumenDto(
+                    e.getId(),
+                    e.getNombre() + " " + e.getApellidos(),
+                    e.getCarnet());
+        }
+    }
+
+    public record SeccionDto(
+            int id,
+            String codigo,
+            String nombre,
+            int docenteId,
+            String docenteNombre,
+            int aulaId,
+            String aulaNumero,
+            List<EstudianteResumenDto> estudiantes) {
+
+        public static SeccionDto desde(Seccion s) {
+            return new SeccionDto(
+                    s.getId(),
+                    s.getCodigo(),
+                    s.getNombre(),
+                    s.getDocente().getId(),
+                    s.getDocente().getNombre()
+                    + " "
+                    + s.getDocente().getApellidos(),
+                    s.getAula().getId(),
+                    s.getAula().getNumero(),
+                    s.getEstudiantes()
+                            .stream()
+                            .map(EstudianteResumenDto::desde)
+                            .toList());
+        }
+
+        public static List<SeccionDto> listaDesde(
+                List<Seccion> secciones) {
+
+            List<SeccionDto> resultado = new ArrayList<>();
+
+            for (Seccion s : secciones) {
+                resultado.add(SeccionDto.desde(s));
             }
 
             return resultado;
