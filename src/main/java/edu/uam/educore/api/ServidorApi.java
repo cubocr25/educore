@@ -28,6 +28,19 @@ import edu.uam.educore.api.Dtos.EmpleadoDto;
 import edu.uam.educore.api.Dtos.EmpleadoRequest;
 import edu.uam.educore.dao.EmpleadoRepoSql;
 import edu.uam.educore.dao.ListaEmpleadoRepo;
+import edu.uam.educore.controller.EdificioController;
+import edu.uam.educore.dao.ListaEdificioRepo;
+import edu.uam.educore.model.infraestructura.Edificio;
+import edu.uam.educore.api.Dtos.AulaDto;
+import edu.uam.educore.api.Dtos.AulaRequest;
+import edu.uam.educore.api.Dtos.EdificioDto;
+import edu.uam.educore.api.Dtos.EdificioRequest;
+
+import edu.uam.educore.model.infraestructura.Aula;
+import edu.uam.educore.model.infraestructura.Edificio;
+
+import edu.uam.educore.controller.EdificioController;
+import edu.uam.educore.dao.ListaEdificioRepo;
 
 /**
  * Arma EduCore como app web. Estudiante corre sobre base de datos (referencia)
@@ -38,28 +51,43 @@ import edu.uam.educore.dao.ListaEmpleadoRepo;
 public class ServidorApi {
 
     public static void iniciar(int puerto) throws IOException {
+
+        // ================= ESTUDIANTES =================
         Repositorio<Estudiante> estudianteRepo;
+
         try {
-            estudianteRepo = new EstudianteRepoSql(ConfiguracionBD.desdeArchivo(".env"));
+            estudianteRepo
+                    = new EstudianteRepoSql(
+                            ConfiguracionBD.desdeArchivo(".env"));
         } catch (IOException e) {
-            // Sin .env legible caemos a memoria para no bloquear el arranque en desarrollo.
             estudianteRepo = new ListaEstudianteRepo();
         }
 
-        EstudianteController estudianteController = new EstudianteController(estudianteRepo);
+        EstudianteController estudianteController
+                = new EstudianteController(estudianteRepo);
 
-        Repositorio empleadoRepo;
+        // ================= EMPLEADOS =================
+        Repositorio<Empleado> empleadoRepo;
 
         try {
-            empleadoRepo = new EmpleadoRepoSql(ConfiguracionBD.desdeArchivo(".env"));
+            empleadoRepo
+                    = new EmpleadoRepoSql(
+                            ConfiguracionBD.desdeArchivo(".env"));
         } catch (IOException e) {
-            // Sin .env legible caemos a memoria para no bloquear el arranque en desarrollo.
             empleadoRepo = new ListaEmpleadoRepo();
         }
 
         EmpleadoController empleadoController
                 = new EmpleadoController(empleadoRepo);
 
+        // ================= EDIFICIOS =================
+        Repositorio<Edificio> edificioRepo
+                = new ListaEdificioRepo();
+
+        EdificioController edificioController
+                = new EdificioController(edificioRepo);
+
+        // ================= JAVALIN =================
         Javalin app
                 = Javalin.create(
                         cfg -> {
@@ -68,21 +96,37 @@ public class ServidorApi {
 
                             cfg.routes.exception(
                                     IllegalArgumentException.class,
-                                    (e, ctx) -> ctx.status(400).json(Map.of("error", e.getMessage())));
+                                    (e, ctx)
+                                    -> ctx.status(400)
+                                            .json(Map.of("error", e.getMessage())));
+
                             cfg.routes.exception(
                                     Exception.class,
-                                    (e, ctx) -> ctx.status(500).json(Map.of("error", e.getMessage())));
+                                    (e, ctx)
+                                    -> ctx.status(500)
+                                            .json(Map.of("error", e.getMessage())));
 
-                            registrarEstudiantes(cfg, estudianteController);
-                            registrarEmpleados(cfg, empleadoController);
-                            registrarEdificios(cfg);
+                            registrarEstudiantes(
+                                    cfg,
+                                    estudianteController);
+
+                            registrarEmpleados(
+                                    cfg,
+                                    empleadoController);
+
+                            registrarEdificios(
+                                    cfg,
+                                    edificioController);
+
                             registrarSecciones(cfg);
                             registrarMatricula(cfg);
                             registrarReporte(cfg);
                         });
 
         app.start(puerto);
-        System.out.println("API EduCore escuchando en http://localhost:" + puerto);
+
+        System.out.println(
+                "API EduCore escuchando en http://localhost:" + puerto);
     }
 
     // ── Estudiantes ──
@@ -211,14 +255,22 @@ public class ServidorApi {
     }
 
     // ── Edificios / Aulas (P1 de cada grupo — sin controlador de nombre fijo) ──
-    private static void registrarEdificios(JavalinConfig cfg) {
+    private static void registrarEdificios(
+            JavalinConfig cfg,
+            EdificioController controller) {
         cfg.routes.get(
                 "/api/edificios",
                 ctx -> {
                     // TODO(estudiante · P1): reemplacen este bloque por su código. Ej.:
                     //   List<Edificio> edificios = MiControladorEdificio.listar();
                     //   ctx.json(EdificioDto.listaDesde(edificios));
-                    ctx.status(501).json(Map.of("error", "edificios: pendiente de implementar"));
+                    List<EdificioDto> lista
+                    = controller.listar()
+                            .stream()
+                            .map(EdificioDto::desde)
+                            .toList();
+
+                    ctx.json(lista);
                 });
 
         cfg.routes.post(
@@ -228,7 +280,14 @@ public class ServidorApi {
                     //   EdificioRequest r = ctx.bodyAsClass(EdificioRequest.class);
                     //   Edificio creado = MiControladorEdificio.registrar(r.codigo(), r.nombre());
                     //   ctx.status(201).json(EdificioDto.desde(creado));
-                    ctx.status(501).json(Map.of("error", "edificios: pendiente de implementar"));
+                    EdificioRequest r
+                    = ctx.bodyAsClass(EdificioRequest.class);
+                    Edificio creado
+                    = controller.registrar(
+                            r.codigo(),
+                            r.nombre());
+                    ctx.status(201).json(
+                            EdificioDto.desde(creado));
                 });
 
         cfg.routes.put(
@@ -240,7 +299,17 @@ public class ServidorApi {
                     //   EdificioRequest r = ctx.bodyAsClass(EdificioRequest.class);
                     //   Edificio actualizado = MiControladorEdificio.actualizar(id, r.codigo(), r.nombre());
                     //   ctx.json(EdificioDto.desde(actualizado));
-                    ctx.status(501).json(Map.of("error", "edificios: pendiente de implementar"));
+                    int id
+                    = Integer.parseInt(ctx.pathParam("id"));
+                    EdificioRequest r
+                    = ctx.bodyAsClass(EdificioRequest.class);
+                    Edificio actualizado
+                    = controller.actualizar(
+                            id,
+                            r.codigo(),
+                            r.nombre());
+                    ctx.json(
+                            EdificioDto.desde(actualizado));
                 });
 
         cfg.routes.delete(
@@ -249,7 +318,9 @@ public class ServidorApi {
                     // TODO(estudiante · P1): llamen a su método de eliminación. Ej.:
                     //   MiControladorEdificio.eliminar(Integer.parseInt(ctx.pathParam("id")));
                     //   ctx.status(204);
-                    ctx.status(501).json(Map.of("error", "edificios: pendiente de implementar"));
+                    controller.eliminar(
+                            Integer.parseInt(ctx.pathParam("id")));
+                    ctx.status(204);
                 });
 
         cfg.routes.post(
@@ -262,7 +333,33 @@ public class ServidorApi {
                     //   Aula aula = MiControladorEdificio.agregarAula(edificioId, r.numero(),
                     //       r.capacidad(), r.tipo() != null ? r.tipo() : TipoAula.REGULAR);
                     //   ctx.status(201).json(AulaDto.desde(aula));
-                    ctx.status(501).json(Map.of("error", "edificios: pendiente de implementar"));
+                    int edificioId
+                    = Integer.parseInt(ctx.pathParam("id"));
+                    AulaRequest r
+                    = ctx.bodyAsClass(AulaRequest.class);
+                    Aula aula
+                    = controller.agregarAula(
+                            edificioId,
+                            r.numero(),
+                            r.capacidad(),
+                            r.tipo());
+                    ctx.status(201).json(
+                            AulaDto.desde(aula));
+                });
+        cfg.routes.delete(
+                "/api/edificios/{id}/aulas/{aulaId}",
+                ctx -> {
+                    int edificioId
+                    = Integer.parseInt(ctx.pathParam("id"));
+
+                    int aulaId
+                    = Integer.parseInt(ctx.pathParam("aulaId"));
+
+                    controller.eliminarAula(
+                            edificioId,
+                            aulaId);
+
+                    ctx.status(204);
                 });
     }
 
