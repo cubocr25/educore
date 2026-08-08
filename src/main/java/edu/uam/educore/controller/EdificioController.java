@@ -9,13 +9,13 @@ import edu.uam.educore.model.infraestructura.Aula;
 import edu.uam.educore.model.infraestructura.Edificio;
 import java.util.List;
 import java.util.Optional;
+import edu.uam.educore.dao.EdificioRepoSql;
 
 public class EdificioController {
 
     private final Repositorio<Edificio> repo;
 
     private int proximoId = 1;
-    private int proximaAulaId = 1;
 
     public EdificioController(Repositorio<Edificio> repo) {
         this.repo = repo;
@@ -102,11 +102,13 @@ public class EdificioController {
             throw new IllegalArgumentException("El tipo del aula es obligatorio.");
         }
 
-        Aula aula = new Aula(proximaAulaId, numero, capacidad, tipo, edificio);
+        Aula aula = new Aula(0, numero, capacidad, tipo, edificio);
+
+        if (repo instanceof EdificioRepoSql repoSql) {
+            repoSql.guardarAula(aula);
+        }
 
         edificio.agregarAula(aula);
-
-        proximaAulaId++;
 
         return aula;
     }
@@ -123,6 +125,10 @@ public class EdificioController {
 
         if (aula == null) {
             throw new IllegalArgumentException("No existe el aula.");
+        }
+
+        if (repo instanceof EdificioRepoSql repoSql) {
+            repoSql.eliminarAula(aulaId);
         }
 
         edificio.eliminarAula(aulaId);

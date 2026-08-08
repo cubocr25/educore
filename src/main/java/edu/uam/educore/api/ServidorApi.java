@@ -35,6 +35,7 @@ import edu.uam.educore.api.Dtos.AulaDto;
 import edu.uam.educore.api.Dtos.AulaRequest;
 import edu.uam.educore.api.Dtos.EdificioDto;
 import edu.uam.educore.api.Dtos.EdificioRequest;
+import edu.uam.educore.dao.EdificioRepoSql;
 
 import edu.uam.educore.model.infraestructura.Aula;
 import edu.uam.educore.model.infraestructura.Edificio;
@@ -81,8 +82,26 @@ public class ServidorApi {
                 = new EmpleadoController(empleadoRepo);
 
         // ================= EDIFICIOS =================
-        Repositorio<Edificio> edificioRepo
-                = new ListaEdificioRepo();
+        Repositorio<Edificio> edificioRepo;
+
+        try {
+            edificioRepo
+                    = new EdificioRepoSql(
+                            ConfiguracionBD.desdeArchivo(".env"));
+
+            System.out.println(
+                    ">>> EDIFICIOS: usando EdificioRepoSql / MariaDB");
+
+        } catch (IOException e) {
+
+            System.out.println(
+                    ">>> EDIFICIOS: usando ListaEdificioRepo / MEMORIA");
+
+            System.out.println(
+                    ">>> Motivo: " + e.getMessage());
+
+            edificioRepo = new ListaEdificioRepo();
+        }
 
         EdificioController edificioController
                 = new EdificioController(edificioRepo);
