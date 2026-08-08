@@ -1,606 +1,516 @@
 package edu.uam.educore.api;
 
-import edu.uam.educore.api.Dtos.SeccionDto;
-import edu.uam.educore.api.Dtos.SeccionRequest;
-import edu.uam.educore.api.Dtos.InscripcionRequest;
-import edu.uam.educore.controller.SeccionController;
-import edu.uam.educore.dao.SeccionRepoSql;
-import edu.uam.educore.model.academico.Seccion;
+import edu.uam.educore.api.Dtos.AulaDto;
+import edu.uam.educore.api.Dtos.AulaRequest;
+import edu.uam.educore.api.Dtos.EdificioDto;
+import edu.uam.educore.api.Dtos.EdificioRequest;
+import edu.uam.educore.api.Dtos.EmpleadoDto;
+import edu.uam.educore.api.Dtos.EmpleadoRequest;
 import edu.uam.educore.api.Dtos.EstudianteDto;
 import edu.uam.educore.api.Dtos.EstudianteRequest;
+import edu.uam.educore.api.Dtos.InscripcionRequest;
 import edu.uam.educore.api.Dtos.MatriculaRequest;
+import edu.uam.educore.api.Dtos.SeccionDto;
+import edu.uam.educore.api.Dtos.SeccionRequest;
+import edu.uam.educore.controller.EdificioController;
+import edu.uam.educore.controller.EmpleadoController;
 import edu.uam.educore.controller.EstudianteController;
+import edu.uam.educore.controller.SeccionController;
+import edu.uam.educore.dao.EdificioRepoSql;
+import edu.uam.educore.dao.EmpleadoRepoSql;
 import edu.uam.educore.dao.EstudianteRepoSql;
+import edu.uam.educore.dao.ListaEdificioRepo;
+import edu.uam.educore.dao.ListaEmpleadoRepo;
 import edu.uam.educore.dao.ListaEstudianteRepo;
+import edu.uam.educore.dao.ListaSeccionRepo;
 import edu.uam.educore.dao.Repositorio;
+import edu.uam.educore.dao.SeccionRepoSql;
 import edu.uam.educore.db.ConfiguracionBD;
+import edu.uam.educore.model.academico.Seccion;
+import edu.uam.educore.model.infraestructura.Aula;
+import edu.uam.educore.model.infraestructura.Edificio;
+import edu.uam.educore.model.personas.Empleado;
 import edu.uam.educore.model.personas.Estudiante;
 import io.javalin.Javalin;
 import io.javalin.config.JavalinConfig;
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import edu.uam.educore.controller.EmpleadoController;
-import edu.uam.educore.model.personas.Empleado;
-import java.time.LocalDate;
-import edu.uam.educore.api.Dtos.EmpleadoDto;
-import edu.uam.educore.api.Dtos.EmpleadoRequest;
-import edu.uam.educore.dao.EmpleadoRepoSql;
-import edu.uam.educore.dao.ListaEmpleadoRepo;
-import edu.uam.educore.controller.EdificioController;
-import edu.uam.educore.dao.ListaEdificioRepo;
-import edu.uam.educore.model.infraestructura.Edificio;
-import edu.uam.educore.api.Dtos.AulaDto;
-import edu.uam.educore.api.Dtos.AulaRequest;
-import edu.uam.educore.api.Dtos.EdificioDto;
-import edu.uam.educore.api.Dtos.EdificioRequest;
-import edu.uam.educore.dao.EdificioRepoSql;
-
-import edu.uam.educore.model.infraestructura.Aula;
-import edu.uam.educore.model.infraestructura.Edificio;
-import edu.uam.educore.dao.ListaSeccionRepo;
-import edu.uam.educore.controller.EdificioController;
-import edu.uam.educore.dao.ListaEdificioRepo;
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.util.Properties;
 
 /**
- * Arma EduCore como app web. Estudiante corre sobre base de datos (referencia)
- * con su controlador real. Empleado, Edificio/Aula y Sección son de cada grupo
- * (P1) — estas rutas no llaman a ningún controlador de nombre fijo, ver los
- * TODO(estudiante · P1) en cada una.
+ * Arma EduCore como app web. Estudiante corre sobre base de datos (referencia) con su controlador
+ * real. Empleado, Edificio/Aula y Sección son de cada grupo (P1) — estas rutas no llaman a ningún
+ * controlador de nombre fijo, ver los TODO(estudiante · P1) en cada una.
  */
 public class ServidorApi {
 
-    public static void iniciar(int puerto) throws IOException {
+  public static void iniciar(int puerto) throws IOException {
 
-        // ================= ESTUDIANTES =================
-        Repositorio<Estudiante> estudianteRepo;
+    // ================= ESTUDIANTES =================
+    Repositorio<Estudiante> estudianteRepo;
 
-        try {
-            estudianteRepo
-                    = new EstudianteRepoSql(
-                            ConfiguracionBD.desdeArchivo(".env"));
-        } catch (IOException e) {
-            estudianteRepo = new ListaEstudianteRepo();
-        }
-
-        EstudianteController estudianteController
-                = new EstudianteController(estudianteRepo);
-
-        // ================= EMPLEADOS =================
-        Repositorio<Empleado> empleadoRepo;
-
-        try {
-            empleadoRepo
-                    = new EmpleadoRepoSql(
-                            ConfiguracionBD.desdeArchivo(".env"));
-        } catch (IOException e) {
-            empleadoRepo = new ListaEmpleadoRepo();
-        }
-
-        EmpleadoController empleadoController
-                = new EmpleadoController(empleadoRepo);
-
-        // ================= EDIFICIOS =================
-        Repositorio<Edificio> edificioRepo;
-
-        try {
-            edificioRepo
-                    = new EdificioRepoSql(
-                            ConfiguracionBD.desdeArchivo(".env"));
-
-            System.out.println(
-                    ">>> EDIFICIOS: usando EdificioRepoSql / MariaDB");
-
-        } catch (IOException e) {
-
-            System.out.println(
-                    ">>> EDIFICIOS: usando ListaEdificioRepo / MEMORIA");
-
-            System.out.println(
-                    ">>> Motivo: " + e.getMessage());
-
-            edificioRepo = new ListaEdificioRepo();
-        }
-
-        EdificioController edificioController
-                = new EdificioController(edificioRepo);
-
-        // ================= SECCIONES =================
-        Repositorio<Seccion> seccionRepo;
-
-        try {
-            seccionRepo = new SeccionRepoSql(
-                    ConfiguracionBD.desdeArchivo(".env"));
-        } catch (IOException e) {
-            // Por ahora usamos memoria si no hay .env.
-            // En nuestro caso debería entrar por SQL.
-            seccionRepo = new ListaSeccionRepo();
-        }
-
-        SeccionController seccionController
-                = new SeccionController(
-                        seccionRepo,
-                        empleadoRepo,
-                        estudianteRepo,
-                        edificioRepo);
-
-        // ================= JAVALIN =================
-        Javalin app
-                = Javalin.create(
-                        cfg -> {
-                            cfg.bundledPlugins.enableDevLogging();
-                            cfg.spaRoot.addFile("/", "/web/index.html");
-
-                            cfg.routes.exception(
-                                    IllegalArgumentException.class,
-                                    (e, ctx)
-                                    -> ctx.status(400)
-                                            .json(Map.of("error", e.getMessage())));
-
-                            cfg.routes.exception(
-                                    Exception.class,
-                                    (e, ctx)
-                                    -> ctx.status(500)
-                                            .json(Map.of("error", e.getMessage())));
-
-                            registrarEstudiantes(
-                                    cfg,
-                                    estudianteController);
-
-                            registrarEmpleados(
-                                    cfg,
-                                    empleadoController);
-
-                            registrarEdificios(
-                                    cfg,
-                                    edificioController);
-
-                            registrarSecciones(cfg, seccionController);
-                            registrarMatricula(cfg);
-                            registrarReporte(cfg);
-                        });
-
-        app.start(puerto);
-
-        System.out.println(
-                "API EduCore escuchando en http://localhost:" + puerto);
+    try {
+      estudianteRepo = new EstudianteRepoSql(ConfiguracionBD.desdeArchivo(".env"));
+    } catch (IOException e) {
+      estudianteRepo = new ListaEstudianteRepo();
     }
 
-    // ── Estudiantes ──
-    private static void registrarEstudiantes(JavalinConfig cfg, EstudianteController controller) {
-        cfg.routes.get(
-                "/api/estudiantes",
-                ctx -> {
-                    List<EstudianteDto> lista
-                    = controller.listar().stream().map(EstudianteDto::desde).toList();
-                    ctx.json(lista);
-                });
+    EstudianteController estudianteController = new EstudianteController(estudianteRepo);
 
-        cfg.routes.post(
-                "/api/estudiantes",
-                ctx -> {
-                    EstudianteRequest r = ctx.bodyAsClass(EstudianteRequest.class);
-                    Estudiante creado
-                    = "BECADO".equalsIgnoreCase(r.tipo())
-                    ? controller.registrarBecado(
-                            r.nombre(),
-                            r.apellidos(),
-                            r.email(),
-                            r.carnet(),
-                            r.porcentajeBeca() != null ? r.porcentajeBeca() : 0.0)
-                    : controller.registrarRegular(r.nombre(), r.apellidos(), r.email(), r.carnet());
-                    ctx.status(201).json(EstudianteDto.desde(creado));
-                });
+    // ================= EMPLEADOS =================
+    Repositorio<Empleado> empleadoRepo;
 
-        cfg.routes.put(
-                "/api/estudiantes/{id}",
-                ctx -> {
-                    int id = Integer.parseInt(ctx.pathParam("id"));
-                    EstudianteRequest r = ctx.bodyAsClass(EstudianteRequest.class);
-                    Estudiante e
-                    = controller.actualizar(
-                            id, r.nombre(), r.apellidos(), r.email(), r.carnet(), r.porcentajeBeca());
-                    ctx.json(EstudianteDto.desde(e));
-                });
-
-        cfg.routes.delete(
-                "/api/estudiantes/{id}",
-                ctx -> {
-                    controller.eliminar(Integer.parseInt(ctx.pathParam("id")));
-                    ctx.status(204);
-                });
+    try {
+      empleadoRepo = new EmpleadoRepoSql(ConfiguracionBD.desdeArchivo(".env"));
+    } catch (IOException e) {
+      empleadoRepo = new ListaEmpleadoRepo();
     }
 
-    // ── Empleados (P1 de cada grupo — sin controlador de nombre fijo) ──
-    private static void registrarEmpleados(
-            JavalinConfig cfg,
-            EmpleadoController controller) {
+    EmpleadoController empleadoController = new EmpleadoController(empleadoRepo);
 
-        cfg.routes.get(
-                "/api/empleados",
-                ctx -> {
-                    List lista
-                    = controller.listar().stream().map(EmpleadoDto::desde).toList();
+    // ================= EDIFICIOS =================
+    Repositorio<Edificio> edificioRepo;
 
-                    ctx.json(lista);
-                });
+    try {
+      edificioRepo = new EdificioRepoSql(ConfiguracionBD.desdeArchivo(".env"));
 
-        cfg.routes.post(
-                "/api/empleados",
-                ctx -> {
-                    // TODO(estudiante · P1): parseen el body y llamen a su método de registro. Ej.:
-                    //   EmpleadoRequest r = ctx.bodyAsClass(EmpleadoRequest.class);
-                    //   Empleado creado = MiControladorEmpleado.registrar(r.nombre(), r.apellidos(),
-                    //       r.email(), r.salario(), LocalDate.parse(r.fechaIngreso()), r.tipo());
-                    //   ctx.status(201).json(EmpleadoDto.desde(creado));
-                    EmpleadoRequest r
-                    = ctx.bodyAsClass(EmpleadoRequest.class);
+      System.out.println(">>> EDIFICIOS: usando EdificioRepoSql / MariaDB");
 
-                    Empleado creado
-                    = controller.registrar(
-                            r.nombre(),
-                            r.apellidos(),
-                            r.email(),
-                            r.salario(),
-                            LocalDate.parse(r.fechaIngreso()),
-                            r.tipo());
+    } catch (IOException e) {
 
-                    ctx.status(201).json(EmpleadoDto.desde(creado));
-                });
+      System.out.println(">>> EDIFICIOS: usando ListaEdificioRepo / MEMORIA");
 
-        cfg.routes.put(
-                "/api/empleados/{id}",
-                ctx -> {
-                    // TODO(estudiante · P1): parseen el id y el body, y llamen a su método de
-                    // actualización. Ej.:
-                    //   int id = Integer.parseInt(ctx.pathParam("id"));
-                    //   EmpleadoRequest r = ctx.bodyAsClass(EmpleadoRequest.class);
-                    //   Empleado actualizado = MiControladorEmpleado.actualizar(id, r.nombre(),
-                    //       r.apellidos(), r.email(), r.salario(), LocalDate.parse(r.fechaIngreso()),
-                    //       r.tipo());
-                    //   ctx.json(EmpleadoDto.desde(actualizado));
-                    int id
-                    = Integer.parseInt(ctx.pathParam("id"));
+      System.out.println(">>> Motivo: " + e.getMessage());
 
-                    EmpleadoRequest r
-                    = ctx.bodyAsClass(EmpleadoRequest.class);
-
-                    Empleado actualizado
-                    = controller.actualizar(
-                            id,
-                            r.nombre(),
-                            r.apellidos(),
-                            r.email(),
-                            r.salario(),
-                            LocalDate.parse(r.fechaIngreso()),
-                            r.tipo());
-
-                    ctx.json(EmpleadoDto.desde(actualizado));
-                });
-
-        cfg.routes.delete(
-                "/api/empleados/{id}",
-                ctx -> {
-                    // TODO(estudiante · P1): llamen a su método de eliminación. Ej.:
-                    //   MiControladorEmpleado.eliminar(Integer.parseInt(ctx.pathParam("id")));
-                    //   ctx.status(204);
-                    controller.eliminar(
-                            Integer.parseInt(ctx.pathParam("id")));
-
-                    ctx.status(204);
-                });
+      edificioRepo = new ListaEdificioRepo();
     }
 
-    // ── Edificios / Aulas (P1 de cada grupo — sin controlador de nombre fijo) ──
-    private static void registrarEdificios(
-            JavalinConfig cfg,
-            EdificioController controller) {
-        cfg.routes.get(
-                "/api/edificios",
-                ctx -> {
-                    // TODO(estudiante · P1): reemplacen este bloque por su código. Ej.:
-                    //   List<Edificio> edificios = MiControladorEdificio.listar();
-                    //   ctx.json(EdificioDto.listaDesde(edificios));
-                    List<EdificioDto> lista
-                    = controller.listar()
-                            .stream()
-                            .map(EdificioDto::desde)
-                            .toList();
+    EdificioController edificioController = new EdificioController(edificioRepo);
 
-                    ctx.json(lista);
-                });
+    // ================= SECCIONES =================
+    Repositorio<Seccion> seccionRepo;
 
-        cfg.routes.post(
-                "/api/edificios",
-                ctx -> {
-                    // TODO(estudiante · P1): parseen el body y llamen a su método de registro. Ej.:
-                    //   EdificioRequest r = ctx.bodyAsClass(EdificioRequest.class);
-                    //   Edificio creado = MiControladorEdificio.registrar(r.codigo(), r.nombre());
-                    //   ctx.status(201).json(EdificioDto.desde(creado));
-                    EdificioRequest r
-                    = ctx.bodyAsClass(EdificioRequest.class);
-                    Edificio creado
-                    = controller.registrar(
-                            r.codigo(),
-                            r.nombre());
-                    ctx.status(201).json(
-                            EdificioDto.desde(creado));
-                });
-
-        cfg.routes.put(
-                "/api/edificios/{id}",
-                ctx -> {
-                    // TODO(estudiante · P1): parseen el id y el body, y llamen a su método de
-                    // actualización. Ej.:
-                    //   int id = Integer.parseInt(ctx.pathParam("id"));
-                    //   EdificioRequest r = ctx.bodyAsClass(EdificioRequest.class);
-                    //   Edificio actualizado = MiControladorEdificio.actualizar(id, r.codigo(), r.nombre());
-                    //   ctx.json(EdificioDto.desde(actualizado));
-                    int id
-                    = Integer.parseInt(ctx.pathParam("id"));
-                    EdificioRequest r
-                    = ctx.bodyAsClass(EdificioRequest.class);
-                    Edificio actualizado
-                    = controller.actualizar(
-                            id,
-                            r.codigo(),
-                            r.nombre());
-                    ctx.json(
-                            EdificioDto.desde(actualizado));
-                });
-
-        cfg.routes.delete(
-                "/api/edificios/{id}",
-                ctx -> {
-                    // TODO(estudiante · P1): llamen a su método de eliminación. Ej.:
-                    //   MiControladorEdificio.eliminar(Integer.parseInt(ctx.pathParam("id")));
-                    //   ctx.status(204);
-                    controller.eliminar(
-                            Integer.parseInt(ctx.pathParam("id")));
-                    ctx.status(204);
-                });
-
-        cfg.routes.post(
-                "/api/edificios/{id}/aulas",
-                ctx -> {
-                    // TODO(estudiante · P1): parseen el id, el body y llamen a su método para agregar
-                    // un aula. Ej.:
-                    //   int edificioId = Integer.parseInt(ctx.pathParam("id"));
-                    //   AulaRequest r = ctx.bodyAsClass(AulaRequest.class);
-                    //   Aula aula = MiControladorEdificio.agregarAula(edificioId, r.numero(),
-                    //       r.capacidad(), r.tipo() != null ? r.tipo() : TipoAula.REGULAR);
-                    //   ctx.status(201).json(AulaDto.desde(aula));
-                    int edificioId
-                    = Integer.parseInt(ctx.pathParam("id"));
-                    AulaRequest r
-                    = ctx.bodyAsClass(AulaRequest.class);
-                    Aula aula
-                    = controller.agregarAula(
-                            edificioId,
-                            r.numero(),
-                            r.capacidad(),
-                            r.tipo());
-                    ctx.status(201).json(
-                            AulaDto.desde(aula));
-                });
-        cfg.routes.delete(
-                "/api/edificios/{id}/aulas/{aulaId}",
-                ctx -> {
-                    int edificioId
-                    = Integer.parseInt(ctx.pathParam("id"));
-
-                    int aulaId
-                    = Integer.parseInt(ctx.pathParam("aulaId"));
-
-                    controller.eliminarAula(
-                            edificioId,
-                            aulaId);
-
-                    ctx.status(204);
-                });
+    try {
+      seccionRepo = new SeccionRepoSql(ConfiguracionBD.desdeArchivo(".env"));
+    } catch (IOException e) {
+      // Por ahora usamos memoria si no hay .env.
+      // En nuestro caso debería entrar por SQL.
+      seccionRepo = new ListaSeccionRepo();
     }
 
-    // ── Secciones (P1 de cada grupo — sin controlador de nombre fijo) ──
-    private static void registrarSecciones(
-            JavalinConfig cfg,
-            SeccionController controller) {
-        cfg.routes.get(
-                "/api/secciones",
-                ctx -> {
-                    // TODO(estudiante · P1): reemplacen este bloque por su código. Ej.:
-                    //   List<Seccion> secciones = MiControladorSeccion.listar();
-                    //   ctx.json(SeccionDto.listaDesde(secciones));
-                    List<Seccion> secciones = controller.listar();
-                    ctx.json(SeccionDto.listaDesde(secciones));
-                });
+    SeccionController seccionController =
+        new SeccionController(seccionRepo, empleadoRepo, estudianteRepo, edificioRepo);
 
-        cfg.routes.post(
-                "/api/secciones",
-                ctx -> {
-                    // TODO(estudiante · P1): parseen el body y llamen a su método de registro. Ej.:
-                    //   SeccionRequest r = ctx.bodyAsClass(SeccionRequest.class);
-                    //   Seccion creada = MiControladorSeccion.registrar(r.codigo(), r.nombre(),
-                    //       r.aulaId(), r.docenteId());
-                    //   ctx.status(201).json(SeccionDto.desde(creada));
-                    SeccionRequest r = ctx.bodyAsClass(SeccionRequest.class);
+    // ================= JAVALIN =================
+    Javalin app =
+        Javalin.create(
+            cfg -> {
+              cfg.bundledPlugins.enableDevLogging();
+              cfg.spaRoot.addFile("/", "/web/index.html");
 
-                    Seccion creada = controller.registrar(
-                            r.codigo(),
-                            r.nombre(),
-                            r.aulaId(),
-                            r.docenteId());
+              cfg.routes.exception(
+                  IllegalArgumentException.class,
+                  (e, ctx) -> ctx.status(400).json(Map.of("error", e.getMessage())));
 
-                    ctx.status(201).json(SeccionDto.desde(creada));
-                });
+              cfg.routes.exception(
+                  Exception.class,
+                  (e, ctx) -> ctx.status(500).json(Map.of("error", e.getMessage())));
 
-        cfg.routes.put(
-                "/api/secciones/{id}",
-                ctx -> {
-                    // TODO(estudiante · P1): parseen el id y el body, y llamen a su método de
-                    // actualización. Ej.:
-                    //   int id = Integer.parseInt(ctx.pathParam("id"));
-                    //   SeccionRequest r = ctx.bodyAsClass(SeccionRequest.class);
-                    //   Seccion actualizada = MiControladorSeccion.actualizar(id, r.codigo(), r.nombre(),
-                    //       r.aulaId(), r.docenteId());
-                    //   ctx.json(SeccionDto.desde(actualizada));
-                    int id = Integer.parseInt(ctx.pathParam("id"));
+              registrarEstudiantes(cfg, estudianteController);
 
-                    SeccionRequest r
-                    = ctx.bodyAsClass(SeccionRequest.class);
+              registrarEmpleados(cfg, empleadoController);
 
-                    Seccion actualizada = controller.actualizar(
-                            id,
-                            r.codigo(),
-                            r.nombre(),
-                            r.aulaId(),
-                            r.docenteId());
+              registrarEdificios(cfg, edificioController);
 
-                    ctx.json(SeccionDto.desde(actualizada));
-                });
+              registrarSecciones(cfg, seccionController);
+              registrarMatricula(cfg);
+              registrarReporte(cfg);
+            });
 
-        cfg.routes.delete(
-                "/api/secciones/{id}",
-                ctx -> {
-                    // TODO(estudiante · P1): llamen a su método de eliminación. Ej.:
-                    //   MiControladorSeccion.eliminar(Integer.parseInt(ctx.pathParam("id")));
-                    //   ctx.status(204);
-                    controller.eliminar(
-                            Integer.parseInt(ctx.pathParam("id")));
+    app.start(puerto);
 
-                    ctx.status(204);
-                });
+    System.out.println("API EduCore escuchando en http://localhost:" + puerto);
+  }
 
-        cfg.routes.post(
-                "/api/secciones/{id}/estudiantes",
-                ctx -> {
-                    // TODO(estudiante · P1): parseen el id, el body y llamen a su método para
-                    // inscribir un estudiante. Ej.:
-                    //   int seccionId = Integer.parseInt(ctx.pathParam("id"));
-                    //   InscripcionRequest r = ctx.bodyAsClass(InscripcionRequest.class);
-                    //   MiControladorSeccion.inscribir(seccionId, r.estudianteId());
-                    //   ctx.json(SeccionDto.desde(MiControladorSeccion.buscarPorId(seccionId)));
-                    int seccionId
-                    = Integer.parseInt(ctx.pathParam("id"));
+  // ── Estudiantes ──
+  private static void registrarEstudiantes(JavalinConfig cfg, EstudianteController controller) {
+    cfg.routes.get(
+        "/api/estudiantes",
+        ctx -> {
+          List<EstudianteDto> lista =
+              controller.listar().stream().map(EstudianteDto::desde).toList();
+          ctx.json(lista);
+        });
 
-                    InscripcionRequest r
-                    = ctx.bodyAsClass(InscripcionRequest.class);
+    cfg.routes.post(
+        "/api/estudiantes",
+        ctx -> {
+          EstudianteRequest r = ctx.bodyAsClass(EstudianteRequest.class);
+          Estudiante creado =
+              "BECADO".equalsIgnoreCase(r.tipo())
+                  ? controller.registrarBecado(
+                      r.nombre(),
+                      r.apellidos(),
+                      r.email(),
+                      r.carnet(),
+                      r.porcentajeBeca() != null ? r.porcentajeBeca() : 0.0)
+                  : controller.registrarRegular(r.nombre(), r.apellidos(), r.email(), r.carnet());
+          ctx.status(201).json(EstudianteDto.desde(creado));
+        });
 
-                    controller.agregarEstudiante(
-                            seccionId,
-                            r.estudianteId());
+    cfg.routes.put(
+        "/api/estudiantes/{id}",
+        ctx -> {
+          int id = Integer.parseInt(ctx.pathParam("id"));
+          EstudianteRequest r = ctx.bodyAsClass(EstudianteRequest.class);
+          Estudiante e =
+              controller.actualizar(
+                  id, r.nombre(), r.apellidos(), r.email(), r.carnet(), r.porcentajeBeca());
+          ctx.json(EstudianteDto.desde(e));
+        });
 
-                    ctx.json(
-                            SeccionDto.desde(
-                                    controller.buscarPorId(seccionId)));
-                });
+    cfg.routes.delete(
+        "/api/estudiantes/{id}",
+        ctx -> {
+          controller.eliminar(Integer.parseInt(ctx.pathParam("id")));
+          ctx.status(204);
+        });
+  }
 
-        cfg.routes.delete(
-                "/api/secciones/{id}/estudiantes/{estudianteId}",
-                ctx -> {
-                    // TODO(estudiante · P1): llamen a su método para remover un estudiante. Ej.:
-                    //   int seccionId = Integer.parseInt(ctx.pathParam("id"));
-                    //   int estudianteId = Integer.parseInt(ctx.pathParam("estudianteId"));
-                    //   MiControladorSeccion.remover(seccionId, estudianteId);
-                    //   ctx.status(204);
-                    int seccionId
-                    = Integer.parseInt(ctx.pathParam("id"));
+  // ── Empleados (P1 de cada grupo — sin controlador de nombre fijo) ──
+  private static void registrarEmpleados(JavalinConfig cfg, EmpleadoController controller) {
 
-                    int estudianteId
-                    = Integer.parseInt(
-                            ctx.pathParam("estudianteId"));
+    cfg.routes.get(
+        "/api/empleados",
+        ctx -> {
+          List lista = controller.listar().stream().map(EmpleadoDto::desde).toList();
 
-                    controller.removerEstudiante(
-                            seccionId,
-                            estudianteId);
+          ctx.json(lista);
+        });
 
-                    ctx.status(204);
-                });
-    }
+    cfg.routes.post(
+        "/api/empleados",
+        ctx -> {
+          // TODO(estudiante · P1): parseen el body y llamen a su método de registro. Ej.:
+          //   EmpleadoRequest r = ctx.bodyAsClass(EmpleadoRequest.class);
+          //   Empleado creado = MiControladorEmpleado.registrar(r.nombre(), r.apellidos(),
+          //       r.email(), r.salario(), LocalDate.parse(r.fechaIngreso()), r.tipo());
+          //   ctx.status(201).json(EmpleadoDto.desde(creado));
+          EmpleadoRequest r = ctx.bodyAsClass(EmpleadoRequest.class);
 
-    // ── Matrícula (puente HTTP→socket) ──
-    private static void registrarMatricula(JavalinConfig cfg) {
-        cfg.routes.post(
-                "/api/matricula",
-                ctx -> {
-                    // Bridge HTTP→socket (provisto por el docente como ejemplo de sockets + archivos):
-                    // guarda el CSV que sube la SPA en ENTRADA_DIR y delega el lote al ServidorMatricula.
-                    // La lógica de la transacción vive en ServidorMatricula.procesarLote (la implementan
-                    // los estudiantes).
-                    MatriculaRequest r = ctx.bodyAsClass(MatriculaRequest.class);
-                    String archivo = r.archivo() != null ? r.archivo() : "matriculas.csv";
-                    String contenido = r.contenido() != null ? r.contenido() : "";
-                    Path entrada = Path.of(System.getenv("ENTRADA_DIR"));
-                    Files.createDirectories(entrada);
-                    Files.writeString(entrada.resolve(archivo), contenido);
-                    String host = System.getenv("MATRICULA_HOST");
-                    int puertoMatricula = Integer.parseInt(System.getenv("MATRICULA_PORT"));
-                    try (Socket socket = new Socket(host, puertoMatricula); PrintWriter out
-                    = new PrintWriter(socket.getOutputStream(), true, StandardCharsets.UTF_8); BufferedReader in
-                    = new BufferedReader(
-                            new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
-                        out.println("MATRICULAR " + archivo);
-                        String respuesta = in.readLine();
-                        ctx.json(
-                                Map.of(
-                                        "respuesta",
-                                        respuesta != null ? respuesta : "sin respuesta del servicio de matricula"));
-                    }
-                });
-    }
+          Empleado creado =
+              controller.registrar(
+                  r.nombre(),
+                  r.apellidos(),
+                  r.email(),
+                  r.salario(),
+                  LocalDate.parse(r.fechaIngreso()),
+                  r.tipo());
 
-    // ── Reporte (puente HTTP→socket) ──
-    private static void registrarReporte(JavalinConfig cfg) {
-        cfg.routes.post(
-                "/api/reporte",
-                ctx -> {
-                    // Bridge HTTP→socket (provisto por el docente como ejemplo de sockets + archivos):
-                    // pide el reporte al ServidorReportes y devuelve el TXT que la SPA descarga. La lógica
-                    // de conteo y escritura del archivo vive en ServidorReportes.generarYGuardar (la
-                    // implementan los estudiantes).
-                    String host = System.getenv("REPORTE_HOST");
-                    String puertoReporteTexto = System.getenv("REPORTE_PORT");
+          ctx.status(201).json(EmpleadoDto.desde(creado));
+        });
 
-                    if (puertoReporteTexto == null || puertoReporteTexto.isBlank()) {
-                        Properties props = new Properties();
+    cfg.routes.put(
+        "/api/empleados/{id}",
+        ctx -> {
+          // TODO(estudiante · P1): parseen el id y el body, y llamen a su método de
+          // actualización. Ej.:
+          //   int id = Integer.parseInt(ctx.pathParam("id"));
+          //   EmpleadoRequest r = ctx.bodyAsClass(EmpleadoRequest.class);
+          //   Empleado actualizado = MiControladorEmpleado.actualizar(id, r.nombre(),
+          //       r.apellidos(), r.email(), r.salario(), LocalDate.parse(r.fechaIngreso()),
+          //       r.tipo());
+          //   ctx.json(EmpleadoDto.desde(actualizado));
+          int id = Integer.parseInt(ctx.pathParam("id"));
 
-                        try (InputStream in = new FileInputStream(".env")) {
-                            props.load(in);
-                        }
+          EmpleadoRequest r = ctx.bodyAsClass(EmpleadoRequest.class);
 
-                        puertoReporteTexto = props.getProperty("REPORTE_PORT");
-                    }
+          Empleado actualizado =
+              controller.actualizar(
+                  id,
+                  r.nombre(),
+                  r.apellidos(),
+                  r.email(),
+                  r.salario(),
+                  LocalDate.parse(r.fechaIngreso()),
+                  r.tipo());
 
-                    int puertoReporte = Integer.parseInt(puertoReporteTexto);
-                    try (Socket socket = new Socket(host, puertoReporte); PrintWriter out
-                    = new PrintWriter(socket.getOutputStream(), true, StandardCharsets.UTF_8); BufferedReader in
-                    = new BufferedReader(
-                            new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
-                        out.println("REPORTE");
-                        String encabezado = in.readLine(); // "200 <n>" en éxito, "500 <msg>" en error
-                        if (encabezado == null || !encabezado.startsWith("200 ")) {
-                            ctx.status(502).json(Map.of("error", "reporte no disponible: " + encabezado));
-                            return;
-                        }
-                        int lineas = Integer.parseInt(encabezado.substring("200 ".length()).trim());
-                        StringBuilder contenido = new StringBuilder();
-                        for (int i = 0; i < lineas; i++) {
-                            String linea = in.readLine();
-                            contenido.append(linea == null ? "" : linea).append("\n");
-                        }
-                        ctx.contentType("text/plain; charset=utf-8");
-                        ctx.header("Content-Disposition", "attachment; filename=\"reporte.txt\"");
-                        ctx.result(contenido.toString());
-                    }
-                });
-    }
+          ctx.json(EmpleadoDto.desde(actualizado));
+        });
+
+    cfg.routes.delete(
+        "/api/empleados/{id}",
+        ctx -> {
+          // TODO(estudiante · P1): llamen a su método de eliminación. Ej.:
+          //   MiControladorEmpleado.eliminar(Integer.parseInt(ctx.pathParam("id")));
+          //   ctx.status(204);
+          controller.eliminar(Integer.parseInt(ctx.pathParam("id")));
+
+          ctx.status(204);
+        });
+  }
+
+  // ── Edificios / Aulas (P1 de cada grupo — sin controlador de nombre fijo) ──
+  private static void registrarEdificios(JavalinConfig cfg, EdificioController controller) {
+    cfg.routes.get(
+        "/api/edificios",
+        ctx -> {
+          // TODO(estudiante · P1): reemplacen este bloque por su código. Ej.:
+          //   List<Edificio> edificios = MiControladorEdificio.listar();
+          //   ctx.json(EdificioDto.listaDesde(edificios));
+          List<EdificioDto> lista = controller.listar().stream().map(EdificioDto::desde).toList();
+
+          ctx.json(lista);
+        });
+
+    cfg.routes.post(
+        "/api/edificios",
+        ctx -> {
+          // TODO(estudiante · P1): parseen el body y llamen a su método de registro. Ej.:
+          //   EdificioRequest r = ctx.bodyAsClass(EdificioRequest.class);
+          //   Edificio creado = MiControladorEdificio.registrar(r.codigo(), r.nombre());
+          //   ctx.status(201).json(EdificioDto.desde(creado));
+          EdificioRequest r = ctx.bodyAsClass(EdificioRequest.class);
+          Edificio creado = controller.registrar(r.codigo(), r.nombre());
+          ctx.status(201).json(EdificioDto.desde(creado));
+        });
+
+    cfg.routes.put(
+        "/api/edificios/{id}",
+        ctx -> {
+          // TODO(estudiante · P1): parseen el id y el body, y llamen a su método de
+          // actualización. Ej.:
+          //   int id = Integer.parseInt(ctx.pathParam("id"));
+          //   EdificioRequest r = ctx.bodyAsClass(EdificioRequest.class);
+          //   Edificio actualizado = MiControladorEdificio.actualizar(id, r.codigo(), r.nombre());
+          //   ctx.json(EdificioDto.desde(actualizado));
+          int id = Integer.parseInt(ctx.pathParam("id"));
+          EdificioRequest r = ctx.bodyAsClass(EdificioRequest.class);
+          Edificio actualizado = controller.actualizar(id, r.codigo(), r.nombre());
+          ctx.json(EdificioDto.desde(actualizado));
+        });
+
+    cfg.routes.delete(
+        "/api/edificios/{id}",
+        ctx -> {
+          // TODO(estudiante · P1): llamen a su método de eliminación. Ej.:
+          //   MiControladorEdificio.eliminar(Integer.parseInt(ctx.pathParam("id")));
+          //   ctx.status(204);
+          controller.eliminar(Integer.parseInt(ctx.pathParam("id")));
+          ctx.status(204);
+        });
+
+    cfg.routes.post(
+        "/api/edificios/{id}/aulas",
+        ctx -> {
+          // TODO(estudiante · P1): parseen el id, el body y llamen a su método para agregar
+          // un aula. Ej.:
+          //   int edificioId = Integer.parseInt(ctx.pathParam("id"));
+          //   AulaRequest r = ctx.bodyAsClass(AulaRequest.class);
+          //   Aula aula = MiControladorEdificio.agregarAula(edificioId, r.numero(),
+          //       r.capacidad(), r.tipo() != null ? r.tipo() : TipoAula.REGULAR);
+          //   ctx.status(201).json(AulaDto.desde(aula));
+          int edificioId = Integer.parseInt(ctx.pathParam("id"));
+          AulaRequest r = ctx.bodyAsClass(AulaRequest.class);
+          Aula aula = controller.agregarAula(edificioId, r.numero(), r.capacidad(), r.tipo());
+          ctx.status(201).json(AulaDto.desde(aula));
+        });
+    cfg.routes.delete(
+        "/api/edificios/{id}/aulas/{aulaId}",
+        ctx -> {
+          int edificioId = Integer.parseInt(ctx.pathParam("id"));
+
+          int aulaId = Integer.parseInt(ctx.pathParam("aulaId"));
+
+          controller.eliminarAula(edificioId, aulaId);
+
+          ctx.status(204);
+        });
+  }
+
+  // ── Secciones (P1 de cada grupo — sin controlador de nombre fijo) ──
+  private static void registrarSecciones(JavalinConfig cfg, SeccionController controller) {
+    cfg.routes.get(
+        "/api/secciones",
+        ctx -> {
+          // TODO(estudiante · P1): reemplacen este bloque por su código. Ej.:
+          //   List<Seccion> secciones = MiControladorSeccion.listar();
+          //   ctx.json(SeccionDto.listaDesde(secciones));
+          List<Seccion> secciones = controller.listar();
+          ctx.json(SeccionDto.listaDesde(secciones));
+        });
+
+    cfg.routes.post(
+        "/api/secciones",
+        ctx -> {
+          // TODO(estudiante · P1): parseen el body y llamen a su método de registro. Ej.:
+          //   SeccionRequest r = ctx.bodyAsClass(SeccionRequest.class);
+          //   Seccion creada = MiControladorSeccion.registrar(r.codigo(), r.nombre(),
+          //       r.aulaId(), r.docenteId());
+          //   ctx.status(201).json(SeccionDto.desde(creada));
+          SeccionRequest r = ctx.bodyAsClass(SeccionRequest.class);
+
+          Seccion creada = controller.registrar(r.codigo(), r.nombre(), r.aulaId(), r.docenteId());
+
+          ctx.status(201).json(SeccionDto.desde(creada));
+        });
+
+    cfg.routes.put(
+        "/api/secciones/{id}",
+        ctx -> {
+          // TODO(estudiante · P1): parseen el id y el body, y llamen a su método de
+          // actualización. Ej.:
+          //   int id = Integer.parseInt(ctx.pathParam("id"));
+          //   SeccionRequest r = ctx.bodyAsClass(SeccionRequest.class);
+          //   Seccion actualizada = MiControladorSeccion.actualizar(id, r.codigo(), r.nombre(),
+          //       r.aulaId(), r.docenteId());
+          //   ctx.json(SeccionDto.desde(actualizada));
+          int id = Integer.parseInt(ctx.pathParam("id"));
+
+          SeccionRequest r = ctx.bodyAsClass(SeccionRequest.class);
+
+          Seccion actualizada =
+              controller.actualizar(id, r.codigo(), r.nombre(), r.aulaId(), r.docenteId());
+
+          ctx.json(SeccionDto.desde(actualizada));
+        });
+
+    cfg.routes.delete(
+        "/api/secciones/{id}",
+        ctx -> {
+          // TODO(estudiante · P1): llamen a su método de eliminación. Ej.:
+          //   MiControladorSeccion.eliminar(Integer.parseInt(ctx.pathParam("id")));
+          //   ctx.status(204);
+          controller.eliminar(Integer.parseInt(ctx.pathParam("id")));
+
+          ctx.status(204);
+        });
+
+    cfg.routes.post(
+        "/api/secciones/{id}/estudiantes",
+        ctx -> {
+          // TODO(estudiante · P1): parseen el id, el body y llamen a su método para
+          // inscribir un estudiante. Ej.:
+          //   int seccionId = Integer.parseInt(ctx.pathParam("id"));
+          //   InscripcionRequest r = ctx.bodyAsClass(InscripcionRequest.class);
+          //   MiControladorSeccion.inscribir(seccionId, r.estudianteId());
+          //   ctx.json(SeccionDto.desde(MiControladorSeccion.buscarPorId(seccionId)));
+          int seccionId = Integer.parseInt(ctx.pathParam("id"));
+
+          InscripcionRequest r = ctx.bodyAsClass(InscripcionRequest.class);
+
+          controller.agregarEstudiante(seccionId, r.estudianteId());
+
+          ctx.json(SeccionDto.desde(controller.buscarPorId(seccionId)));
+        });
+
+    cfg.routes.delete(
+        "/api/secciones/{id}/estudiantes/{estudianteId}",
+        ctx -> {
+          // TODO(estudiante · P1): llamen a su método para remover un estudiante. Ej.:
+          //   int seccionId = Integer.parseInt(ctx.pathParam("id"));
+          //   int estudianteId = Integer.parseInt(ctx.pathParam("estudianteId"));
+          //   MiControladorSeccion.remover(seccionId, estudianteId);
+          //   ctx.status(204);
+          int seccionId = Integer.parseInt(ctx.pathParam("id"));
+
+          int estudianteId = Integer.parseInt(ctx.pathParam("estudianteId"));
+
+          controller.removerEstudiante(seccionId, estudianteId);
+
+          ctx.status(204);
+        });
+  }
+
+  // ── Matrícula (puente HTTP→socket) ──
+  private static void registrarMatricula(JavalinConfig cfg) {
+    cfg.routes.post(
+        "/api/matricula",
+        ctx -> {
+          // Bridge HTTP→socket (provisto por el docente como ejemplo de sockets + archivos):
+          // guarda el CSV que sube la SPA en ENTRADA_DIR y delega el lote al ServidorMatricula.
+          // La lógica de la transacción vive en ServidorMatricula.procesarLote (la implementan
+          // los estudiantes).
+          MatriculaRequest r = ctx.bodyAsClass(MatriculaRequest.class);
+          String archivo = r.archivo() != null ? r.archivo() : "matriculas.csv";
+          String contenido = r.contenido() != null ? r.contenido() : "";
+          Path entrada = Path.of(System.getenv("ENTRADA_DIR"));
+          Files.createDirectories(entrada);
+          Files.writeString(entrada.resolve(archivo), contenido);
+          String host = System.getenv("MATRICULA_HOST");
+          int puertoMatricula = Integer.parseInt(System.getenv("MATRICULA_PORT"));
+          try (Socket socket = new Socket(host, puertoMatricula);
+              PrintWriter out =
+                  new PrintWriter(socket.getOutputStream(), true, StandardCharsets.UTF_8);
+              BufferedReader in =
+                  new BufferedReader(
+                      new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
+            out.println("MATRICULAR " + archivo);
+            String respuesta = in.readLine();
+            ctx.json(
+                Map.of(
+                    "respuesta",
+                    respuesta != null ? respuesta : "sin respuesta del servicio de matricula"));
+          }
+        });
+  }
+
+  // ── Reporte (puente HTTP→socket) ──
+  private static void registrarReporte(JavalinConfig cfg) {
+    cfg.routes.post(
+        "/api/reporte",
+        ctx -> {
+          // Bridge HTTP→socket (provisto por el docente como ejemplo de sockets + archivos):
+          // pide el reporte al ServidorReportes y devuelve el TXT que la SPA descarga. La lógica
+          // de conteo y escritura del archivo vive en ServidorReportes.generarYGuardar (la
+          // implementan los estudiantes).
+          String host = System.getenv("REPORTE_HOST");
+          String puertoReporteTexto = System.getenv("REPORTE_PORT");
+
+          if (puertoReporteTexto == null || puertoReporteTexto.isBlank()) {
+            Properties props = new Properties();
+
+            try (InputStream in = new FileInputStream(".env")) {
+              props.load(in);
+            }
+
+            puertoReporteTexto = props.getProperty("REPORTE_PORT");
+          }
+
+          int puertoReporte = Integer.parseInt(puertoReporteTexto);
+          try (Socket socket = new Socket(host, puertoReporte);
+              PrintWriter out =
+                  new PrintWriter(socket.getOutputStream(), true, StandardCharsets.UTF_8);
+              BufferedReader in =
+                  new BufferedReader(
+                      new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
+            out.println("REPORTE");
+            String encabezado = in.readLine(); // "200 <n>" en éxito, "500 <msg>" en error
+            if (encabezado == null || !encabezado.startsWith("200 ")) {
+              ctx.status(502).json(Map.of("error", "reporte no disponible: " + encabezado));
+              return;
+            }
+            int lineas = Integer.parseInt(encabezado.substring("200 ".length()).trim());
+            StringBuilder contenido = new StringBuilder();
+            for (int i = 0; i < lineas; i++) {
+              String linea = in.readLine();
+              contenido.append(linea == null ? "" : linea).append("\n");
+            }
+            ctx.contentType("text/plain; charset=utf-8");
+            ctx.header("Content-Disposition", "attachment; filename=\"reporte.txt\"");
+            ctx.result(contenido.toString());
+          }
+        });
+  }
 }

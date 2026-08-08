@@ -4,7 +4,6 @@ import edu.uam.educore.db.Conexion;
 import edu.uam.educore.db.ConfiguracionBD;
 import edu.uam.educore.enums.TipoPersonal;
 import edu.uam.educore.model.personas.Empleado;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -23,10 +22,7 @@ public class EmpleadoRepoSql extends Repositorio<Empleado> {
   }
 
   private Connection abrir() throws Exception {
-    return Conexion.getConnection(
-        config.url(),
-        config.usuario(),
-        config.contrasena());
+    return Conexion.getConnection(config.url(), config.usuario(), config.contrasena());
   }
 
   @Override
@@ -38,8 +34,7 @@ public class EmpleadoRepoSql extends Repositorio<Empleado> {
             + "VALUES (?, ?, ?, ?, ?, ?)";
 
     try (Connection con = abrir();
-        PreparedStatement ps =
-            con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
       ps.setString(1, empleado.getNombre());
       ps.setString(2, empleado.getApellidos());
@@ -85,8 +80,7 @@ public class EmpleadoRepoSql extends Repositorio<Empleado> {
   public void eliminar(int id) throws Exception {
 
     try (Connection con = abrir();
-        PreparedStatement ps =
-            con.prepareStatement("DELETE FROM empleado WHERE id=?")) {
+        PreparedStatement ps = con.prepareStatement("DELETE FROM empleado WHERE id=?")) {
 
       ps.setInt(1, id);
       ps.executeUpdate();
@@ -97,8 +91,7 @@ public class EmpleadoRepoSql extends Repositorio<Empleado> {
   public Optional<Empleado> buscarPorId(int id) throws Exception {
 
     try (Connection con = abrir();
-        PreparedStatement ps =
-            con.prepareStatement("SELECT * FROM empleado WHERE id=?")) {
+        PreparedStatement ps = con.prepareStatement("SELECT * FROM empleado WHERE id=?")) {
 
       ps.setInt(1, id);
 
@@ -119,8 +112,7 @@ public class EmpleadoRepoSql extends Repositorio<Empleado> {
     List<Empleado> lista = new ArrayList<>();
 
     try (Connection con = abrir();
-        PreparedStatement ps =
-            con.prepareStatement("SELECT * FROM empleado");
+        PreparedStatement ps = con.prepareStatement("SELECT * FROM empleado");
         ResultSet rs = ps.executeQuery()) {
 
       while (rs.next()) {
@@ -139,19 +131,10 @@ public class EmpleadoRepoSql extends Repositorio<Empleado> {
     String email = rs.getString("email");
     double salario = rs.getDouble("salario");
 
-    LocalDate fechaIngreso =
-        rs.getDate("fecha_ingreso").toLocalDate();
+    LocalDate fechaIngreso = rs.getDate("fecha_ingreso").toLocalDate();
 
-    TipoPersonal tipo =
-        TipoPersonal.valueOf(rs.getString("tipo"));
+    TipoPersonal tipo = TipoPersonal.valueOf(rs.getString("tipo"));
 
-    return new Empleado(
-        id,
-        nombre,
-        apellidos,
-        email,
-        salario,
-        fechaIngreso,
-        tipo);
+    return new Empleado(id, nombre, apellidos, email, salario, fechaIngreso, tipo);
   }
 }
