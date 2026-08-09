@@ -13,131 +13,131 @@ import java.util.Optional;
 
 public class EdificioController {
 
-  private final Repositorio<Edificio> repo;
+    private final Repositorio<Edificio> repo;
 
-  private int proximoId = 1;
+    private int proximoId = 1;
 
-  public EdificioController(Repositorio<Edificio> repo) {
-    this.repo = repo;
-  }
-
-  // ================= EDIFICIOS =================
-  public Edificio registrar(String codigo, String nombre) throws Exception {
-
-    validarEdificio(codigo, nombre);
-
-    Edificio edificio = new Edificio(proximoId, codigo, nombre);
-
-    repo.guardar(edificio);
-    proximoId++;
-
-    return edificio;
-  }
-
-  public List<Edificio> listar() throws Exception {
-    return repo.buscarTodos();
-  }
-
-  public Edificio buscarPorId(int id) throws Exception {
-
-    Optional<Edificio> resultado = repo.buscarPorId(id);
-
-    return resultado.orElse(null);
-  }
-
-  public void eliminar(int id) throws Exception {
-
-    Edificio edificio = buscarPorId(id);
-
-    if (edificio == null) {
-      throw new IllegalArgumentException("No existe edificio con ID " + id + ".");
+    public EdificioController(Repositorio<Edificio> repo) {
+        this.repo = repo;
     }
 
-    if (!edificio.getAulas().isEmpty()) {
-      throw new IllegalArgumentException(
-          "No se puede eliminar el edificio porque todavía tiene aulas.");
+    // ================= EDIFICIOS =================
+    public Edificio registrar(String codigo, String nombre) throws Exception {
+
+        validarEdificio(codigo, nombre);
+
+        Edificio edificio = new Edificio(proximoId, codigo, nombre);
+
+        repo.guardar(edificio);
+        proximoId++;
+
+        return edificio;
     }
 
-    repo.eliminar(id);
-  }
-
-  public Edificio actualizar(int id, String codigo, String nombre) throws Exception {
-
-    Edificio edificio = buscarPorId(id);
-
-    if (edificio == null) {
-      throw new IllegalArgumentException("No existe edificio con ID " + id + ".");
+    public List<Edificio> listar() throws Exception {
+        return repo.buscarTodos();
     }
 
-    validarEdificio(codigo, nombre);
+    public Edificio buscarPorId(int id) throws Exception {
 
-    edificio.setCodigo(codigo);
-    edificio.setNombre(nombre);
+        Optional<Edificio> resultado = repo.buscarPorId(id);
 
-    repo.actualizar(edificio);
-
-    return edificio;
-  }
-
-  // ================= AULAS =================
-  public Aula agregarAula(int edificioId, String numero, int capacidad, String tipo)
-      throws Exception {
-
-    Edificio edificio = buscarPorId(edificioId);
-
-    if (edificio == null) {
-      throw new IllegalArgumentException("No existe edificio con ID " + edificioId + ".");
+        return resultado.orElse(null);
     }
 
-    if (numero.isBlank()) {
-      throw new IllegalArgumentException("El número del aula es obligatorio.");
+    public void eliminar(int id) throws Exception {
+
+        Edificio edificio = buscarPorId(id);
+
+        if (edificio == null) {
+            throw new IllegalArgumentException("No existe edificio con ID " + id + ".");
+        }
+
+        if (!edificio.getAulas().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "No se puede eliminar el edificio porque todavía tiene aulas.");
+        }
+
+        repo.eliminar(id);
     }
 
-    if (capacidad <= 0) {
-      throw new IllegalArgumentException("La capacidad debe ser mayor que cero.");
+    public Edificio actualizar(int id, String codigo, String nombre) throws Exception {
+
+        Edificio edificio = buscarPorId(id);
+
+        if (edificio == null) {
+            throw new IllegalArgumentException("No existe edificio con ID " + id + ".");
+        }
+
+        validarEdificio(codigo, nombre);
+
+        edificio.setCodigo(codigo);
+        edificio.setNombre(nombre);
+
+        repo.actualizar(edificio);
+
+        return edificio;
     }
 
-    if (tipo.isBlank()) {
-      throw new IllegalArgumentException("El tipo del aula es obligatorio.");
+    // ================= AULAS =================
+    public Aula agregarAula(int edificioId, String numero, int capacidad, String tipo)
+            throws Exception {
+
+        Edificio edificio = buscarPorId(edificioId);
+
+        if (edificio == null) {
+            throw new IllegalArgumentException("No existe edificio con ID " + edificioId + ".");
+        }
+
+        if (numero == null || numero.isBlank()) {
+            throw new IllegalArgumentException("El número del aula es obligatorio.");
+        }
+
+        if (capacidad <= 0) {
+            throw new IllegalArgumentException("La capacidad debe ser mayor que cero.");
+        }
+
+        if (tipo == null || tipo.isBlank()) {
+            throw new IllegalArgumentException("El tipo del aula es obligatorio.");
+        }
+
+        Aula aula = new Aula(0, numero, capacidad, tipo, edificio);
+
+        if (repo instanceof EdificioRepoSql repoSql) {
+            repoSql.guardarAula(aula);
+        }
+
+        edificio.agregarAula(aula);
+
+        return aula;
     }
 
-    Aula aula = new Aula(0, numero, capacidad, tipo, edificio);
+    public void eliminarAula(int edificioId, int aulaId) throws Exception {
 
-    if (repo instanceof EdificioRepoSql repoSql) {
-      repoSql.guardarAula(aula);
+        Edificio edificio = buscarPorId(edificioId);
+
+        if (edificio == null) {
+            throw new IllegalArgumentException("No existe edificio.");
+        }
+
+        Aula aula = edificio.buscarAula(aulaId);
+
+        if (aula == null) {
+            throw new IllegalArgumentException("No existe el aula.");
+        }
+
+        if (repo instanceof EdificioRepoSql repoSql) {
+            repoSql.eliminarAula(aulaId);
+        }
+
+        edificio.eliminarAula(aulaId);
     }
 
-    edificio.agregarAula(aula);
-
-    return aula;
-  }
-
-  public void eliminarAula(int edificioId, int aulaId) throws Exception {
-
-    Edificio edificio = buscarPorId(edificioId);
-
-    if (edificio == null) {
-      throw new IllegalArgumentException("No existe edificio.");
+    // ================= VALIDACIONES =================
+    private void validarEdificio(String codigo, String nombre) {
+        if (codigo == null || codigo.isBlank()
+                || nombre == null || nombre.isBlank()) {
+            throw new IllegalArgumentException("Código y nombre son obligatorios.");
+        }
     }
-
-    Aula aula = edificio.buscarAula(aulaId);
-
-    if (aula == null) {
-      throw new IllegalArgumentException("No existe el aula.");
-    }
-
-    if (repo instanceof EdificioRepoSql repoSql) {
-      repoSql.eliminarAula(aulaId);
-    }
-
-    edificio.eliminarAula(aulaId);
-  }
-
-  // ================= VALIDACIONES =================
-  private void validarEdificio(String codigo, String nombre) {
-
-    if (codigo.isBlank() || nombre.isBlank()) {
-      throw new IllegalArgumentException("Código y nombre son obligatorios.");
-    }
-  }
 }
